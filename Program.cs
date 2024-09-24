@@ -51,8 +51,8 @@ namespace VParser
             //await VParser.src.SeleniumFunctions.GetImageFromXiaohongshuURLAsync(url, MinutesToWaitSiteLoading);
             */
 
-            //await VParser.src.SeleniumFunctions.MultiplyDouyinVideoDownloadAsync(options);
-            await VParser.src.SeleniumFunctions.MultiplyZcoolDownloadAsync(options);
+            await VParser.src.SeleniumFunctions.MultiplyDouyinVideoDownloadAsync(options);
+            //await VParser.src.SeleniumFunctions.MultiplyZcoolDownloadAsync(options);
         }
     }
 }

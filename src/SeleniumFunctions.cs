@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SeleniumExtras.WaitHelpers;
+using System.IO;
 
 namespace VParser.src
 {
@@ -51,10 +52,13 @@ namespace VParser.src
             IWebDriver driver = new ChromeDriver(options);
             WebDriverWait waitLong = new WebDriverWait(driver, TimeSpan.FromMinutes(100));
             WebDriverWait waitShort = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
+            int tryCount;
 
             foreach (string vidoUrl in videoLinks)
             {
                 driver.Navigate().GoToUrl(vidoUrl);
+                System.Threading.Thread.Sleep(5000);
+                tryCount = 0;
 
                 try
                 {
@@ -65,7 +69,6 @@ namespace VParser.src
                 {
                     // Если кнопка не появляется, продолжаем без нажатия
                 }
-
                 // Находим элемент video
                 var videoElement = waitLong.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.TagName("video")));
                 // Находим все элементы source внутри video
@@ -86,6 +89,58 @@ namespace VParser.src
                 else
                 {
                     Console.WriteLine("Нет доступных элементов source для видео.");
+
+                    while (true)
+                    {
+                        System.Threading.Thread.Sleep(2000);
+
+                        string currentUrl = driver.Url;
+
+                        if (!currentUrl.Contains(vidoUrl))
+                        {
+                            driver.Navigate().GoToUrl(vidoUrl);
+                            System.Threading.Thread.Sleep(5000);
+
+                            try
+                            {
+                                var closeButton = waitShort.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementToBeClickable(By.ClassName("douyin-login__close")));
+                                closeButton.Click();
+                            }
+                            catch (WebDriverTimeoutException)
+                            {
+                                // Если кнопка не появляется, продолжаем без нажатия
+                            }
+                        }
+
+                        videoElement = waitLong.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.TagName("video")));
+                        sourceElements = videoElement.FindElements(By.TagName("source"));
+
+                        currentUrl = driver.Url;
+                        if (sourceElements.Count > 0 || currentUrl.Contains(vidoUrl))
+                        {
+                            string videoUrlToDownload = sourceElements[sourceElements.Count - 1].GetAttribute("src");
+
+                            if (!string.IsNullOrEmpty(videoUrlToDownload))
+                            {
+                                // код для скачивания видео
+                                Console.WriteLine($"Скачивание видео с URL: {videoUrlToDownload}");
+                                await VParser.src.FileDownloader.DownloadFileAsyncMP4(videoUrlToDownload);
+                            }
+
+                            break;
+                        }
+
+                        tryCount++;
+                        if (tryCount > 5)
+                        {
+                            string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                            string unsuccessfulDownloads = "UnsuccessfulDownloads.txt";
+                            string unsuccessfulDownloadsPath = Path.Combine(exeDirectory, unsuccessfulDownloads);
+                            File.AppendAllText(unsuccessfulDownloadsPath, vidoUrl);
+
+                            break;
+                        }
+                    }
                 }
 
             }
