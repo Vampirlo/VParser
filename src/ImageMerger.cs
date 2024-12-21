@@ -10,6 +10,7 @@ namespace VParser.src
 {
     internal class ImageMerger
     {
+        // images need to be named like 1.png 2.png 3.png
         public static void imageMergerWithOneHeight(string imagesPath)
         {
             if (!Directory.Exists(imagesPath))
