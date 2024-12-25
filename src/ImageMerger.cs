@@ -1,16 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing.Imaging;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Drawing.Imaging;
-using System.Drawing;
 
-namespace VParser.src
+namespace ImageMerger
 {
-    internal class ImageMerger
+    internal class imageMerger
     {
-        // images need to be named like 1.png 2.png 3.png
+        static string[] GetSortedPngFilesByDate(string imagesPath)
+        {
+            string[] imageFiles = Directory.GetFiles(imagesPath, "*.png")
+                .OrderBy(f => File.GetLastWriteTime(f)) // Сортируем по дате последнего изменения
+                .ToArray();
+
+            return imageFiles;
+        }
+
         public static void imageMergerWithOneHeight(string imagesPath)
         {
             if (!Directory.Exists(imagesPath))
@@ -19,12 +28,8 @@ namespace VParser.src
                 return;
             }
 
-            // Получаем список файлов PNG, отсортированных по числам
-            string[] imageFiles = Directory.GetFiles(imagesPath, "*.png")
-                .Where(f => int.TryParse(Path.GetFileNameWithoutExtension(f), out _)) // Оставляем только те файлы, у которых имя - число
-                .OrderBy(f => int.Parse(Path.GetFileNameWithoutExtension(f))) // Сортируем по числовому значению
-                .ToArray();
-
+            // Получаем список файлов PNG, Сортируем по дате последнего изменения
+            string[] imageFiles = GetSortedPngFilesByDate(imagesPath);
             if (imageFiles.Length == 0)
             {
                 Console.WriteLine("В папке нет изображений в формате PNG.");
@@ -77,6 +82,68 @@ namespace VParser.src
             catch (Exception ex)
             {
                 Console.WriteLine("Произошла ошибка: " + ex.Message);
+            }
+        }
+
+        public static void SplitImageByWhiteLines(string imagePath, string outputDirectory)
+        {
+            using (Bitmap bitmap = new Bitmap(imagePath))
+            {
+                int lastSplitY = 0;
+                bool isPreviousLineWhite = false;
+
+                for (int y = 0; y < bitmap.Height; y++)
+                {
+                    bool isCurrentLineWhite = IsLineWhite(bitmap, y);
+
+                    if (isCurrentLineWhite && !isPreviousLineWhite)
+                    {
+                        // Сохранить участок от lastSplitY до текущей линии
+                        if (y > lastSplitY)
+                        {
+                            SaveSegment(bitmap, lastSplitY, y, outputDirectory);
+                        }
+
+                        lastSplitY = y;
+                    }
+
+                    isPreviousLineWhite = isCurrentLineWhite;
+                }
+
+                // Сохранить последний участок, если он есть
+                if (lastSplitY < bitmap.Height)
+                {
+                    SaveSegment(bitmap, lastSplitY, bitmap.Height, outputDirectory);
+                }
+            }
+        }
+
+        static bool IsLineWhite(Bitmap bitmap, int y)
+        {
+            for (int x = 0; x < bitmap.Width; x++)
+            {
+                Color pixel = bitmap.GetPixel(x, y);
+                if (pixel.R < 250 || pixel.G < 250 || pixel.B < 250) // Не полностью белый
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        static void SaveSegment(Bitmap bitmap, int startY, int endY, string outputDirectory)
+        {
+            int height = endY - startY;
+
+            if (height <= 0)
+                return;
+
+            Rectangle section = new Rectangle(0, startY, bitmap.Width, height);
+            using (Bitmap segment = bitmap.Clone(section, bitmap.PixelFormat))
+            {
+                string fileName = Path.Combine(outputDirectory, $"segment_{startY}_{endY}.png");
+                segment.Save(fileName, ImageFormat.Png);
+                Console.WriteLine($"Saved segment: {fileName}");
             }
         }
     }
