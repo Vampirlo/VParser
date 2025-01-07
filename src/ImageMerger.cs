@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 /*
  * Program.cs example:
- static void Main(string[] args)
+  static void Main(string[] args)
     {
         string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
         string mergePathName = "merge";
@@ -28,13 +28,16 @@ using System.Threading.Tasks;
 
         // обычная вариация
 
-        imageMerger.ImageMergerWithOneHeight(imageMerger.GetSortedImageFilesByDate(mergeFullPath), fullPathOfAlreadyMergedImages);
-        imageMerger.SplitAllImageFromPath(imageMerger.GetSortedImageFilesByDate(fullPathOfAlreadyMergedImages), mergeFullPath, SplitedImagesPath); 
+        //imageMerger.ImageMergerWithOneHeight(imageMerger.GetSortedImageFilesByDate(mergeFullPath), fullPathOfAlreadyMergedImages);
+        //imageMerger.SplitAllImageFromPath(imageMerger.GetSortedImageFilesByDate(fullPathOfAlreadyMergedImages), mergeFullPath, SplitedImagesPath); 
 
         // вариация следующая - Все изображения из папки в массив, цикл по этому массиву применяем разделение
 
-        //imageMerger.SplitAllImageFromPath(imageMerger.GetSortedImageFilesByDate(mergeFullPath), mergeFullPath, SplitedImagesPath);
-        //imageMerger.GetImagesWithoutWhiteLines(imageMerger.GetSortedImageFilesByDate(SplitedImagesPath), ImageWithoutWhileLinesPath);
+        imageMerger.SplitAllImageFromPath(imageMerger.GetSortedImageFilesByDate(mergeFullPath), mergeFullPath, SplitedImagesPath);
+        imageMerger.GetImagesWithoutWhiteLines(imageMerger.GetSortedImageFilesByDate(SplitedImagesPath), ImageWithoutWhileLinesPath);
+        //or
+        imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(mergeFullPath), mergeFullPath, SplitedImagesPath, imageMerger.SplitAllImageFromPath);
+        imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(SplitedImagesPath), ImageWithoutWhileLinesPath, imageMerger.GetImagesWithoutWhiteLines);
     }
 */
 
@@ -102,7 +105,7 @@ namespace ImageMerger
                     }
 
                     // Сохраняем итоговое изображение
-                    string randomFileName = Path.GetRandomFileName().Replace(".", "")+ ".png";
+                    string randomFileName = Path.GetRandomFileName().Replace(".", "") + ".png";
 
                     string outputFilePath = Path.Combine(fullPathOfAlreadyMergedImages, randomFileName); //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -126,7 +129,7 @@ namespace ImageMerger
 
                 for (int y = 0; y < bitmap.Height; y++)
                 {
-                    bool isCurrentLineWhite = IsLineWhite(bitmap, y);
+                    bool isCurrentLineWhite = IsLineWhite(bitmap, y, false);
 
                     if (isCurrentLineWhite && !isPreviousLineWhite)
                     {
@@ -150,14 +153,24 @@ namespace ImageMerger
             }
         }
 
-        static bool IsLineWhite(Bitmap bitmap, int y)
+        static bool IsLineWhite(Bitmap bitmap, int y, bool approximately)
         {
             for (int x = 0; x < bitmap.Width; x++)
             {
                 Color pixel = bitmap.GetPixel(x, y);
-                if (pixel.R < 220 || pixel.G < 220 || pixel.B < 220) // Не полностью белый
+                if (approximately)
                 {
-                    return false;
+                    if (pixel.R < 220 || pixel.G < 220 || pixel.B < 220) // Не полностью белый
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (pixel.R < 255 || pixel.G < 255 || pixel.B < 255) // Не полностью белый
+                    {
+                        return false;
+                    }
                 }
             }
             return true;
@@ -196,14 +209,14 @@ namespace ImageMerger
                 {
                     // Определяем верхнюю границу (где заканчиваются белые полосы сверху)
                     int top = 0;
-                    while (top < bitmap.Height && IsLineWhite(bitmap, top))
+                    while (top < bitmap.Height && IsLineWhite(bitmap, top, true))
                     {
                         top++;
                     }
 
                     // Определяем нижнюю границу (где заканчиваются белые полосы снизу)
                     int bottom = bitmap.Height - 1;
-                    while (bottom > top && IsLineWhite(bitmap, bottom))
+                    while (bottom > top && IsLineWhite(bitmap, bottom, true))
                     {
                         bottom--;
                     }
@@ -212,15 +225,24 @@ namespace ImageMerger
                     if (top > 0 || bottom < bitmap.Height - 1)
                     {
                         int newHeight = bottom - top + 1;
-                        using (Bitmap croppedBitmap = bitmap.Clone(new Rectangle(0, top, bitmap.Width, newHeight), bitmap.PixelFormat))
+
+                        // Проверка на допустимость высоты
+                        if (newHeight > 0)
                         {
-                            // Генерируем путь для сохранения обрезанного изображения в выходной папке
-                            string outputFileName = Path.Combine(outputPath, Path.GetFileName(imageFile));
+                            using (Bitmap croppedBitmap = bitmap.Clone(new Rectangle(0, top, bitmap.Width, newHeight), bitmap.PixelFormat))
+                            {
+                                // Генерируем путь для сохранения обрезанного изображения в выходной папке
+                                string outputFileName = Path.Combine(outputPath, Path.GetFileName(imageFile));
 
-                            // Сохраняем обрезанное изображение
-                            croppedBitmap.Save(outputFileName, ImageFormat.Png);
+                                // Сохраняем обрезанное изображение
+                                croppedBitmap.Save(outputFileName, ImageFormat.Png);
 
-                            Console.WriteLine($"Изображение {imageFile} было обрезано и сохранено как {outputFileName}.");
+                                Console.WriteLine($"Изображение {imageFile} было обрезано и сохранено как {outputFileName}.");
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Изображение {imageFile} имеет некорректную высоту после обрезки и будет пропущено.");
                         }
                     }
                     else
@@ -229,6 +251,67 @@ namespace ImageMerger
                     }
                 }
             }
+        }
+
+        public static List<string[]> SplitArrayIntoChunks(string[] imageFiles, int numChunks)
+        {
+            var chunks = new List<string[]>();
+            int chunkSize = imageFiles.Length / numChunks; // Размер чанка
+            int remainder = imageFiles.Length % numChunks; // Остаток
+
+            int startIndex = 0;
+            for (int i = 0; i < numChunks; i++)
+            {
+                // Если текущий чанк должен получить остаток (лишние элементы)
+                int currentChunkSize = chunkSize + (i < remainder ? 1 : 0);
+                var chunk = new string[currentChunkSize];
+                Array.Copy(imageFiles, startIndex, chunk, 0, currentChunkSize);
+                chunks.Add(chunk);
+                startIndex += currentChunkSize;
+            }
+
+            return chunks;
+        }
+        public static void MultiThreadedProcessImages(string[] imageFiles, string mergeFullPath, string splitedImagesPath, Action<string[], string, string> processingMethod)
+        {
+            int maxThreads = Environment.ProcessorCount;  // Получаем максимальное количество потоков
+            var chunks = SplitArrayIntoChunks(imageFiles, maxThreads);  // Разбиваем массив на части
+
+            var tasks = new List<Task>();
+
+            foreach (var chunk in chunks)
+            {
+                // Создаем задачу для обработки текущего чанка изображений
+                var task = Task.Run(() =>
+                {
+                    // обработка
+                    processingMethod(chunk, mergeFullPath, splitedImagesPath);
+                });
+
+                tasks.Add(task);
+            }
+
+            // Ждем завершения всех задач
+            Task.WhenAll(tasks).Wait();
+        }
+
+        public static void MultiThreadedProcessImages(string[] imageFiles, string outputPath, Action<string[], string> processingMethod)
+        {
+            int maxThreads = Environment.ProcessorCount;
+            var chunks = SplitArrayIntoChunks(imageFiles, maxThreads);
+
+            var tasks = new List<Task>();
+
+            foreach (var chunk in chunks)
+            {
+                var task = Task.Run(() =>
+                {
+                    processingMethod(chunk, outputPath);
+                });
+                tasks.Add(task);
+            }
+
+            Task.WhenAll(tasks).Wait();
         }
     }
 }
