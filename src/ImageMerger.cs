@@ -7,11 +7,42 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+/*
+ * Program.cs example:
+ static void Main(string[] args)
+    {
+        string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
+        string mergePathName = "merge";
+        string pathNameForMergedImages = "AlreadyMerged";
+        string mergeFullPath = Path.Combine(exeDirectory, mergePathName);
+        string fullPathOfAlreadyMergedImages = Path.Combine(mergeFullPath, pathNameForMergedImages);
+
+        //директория для готовых разделённых изображений и 
+        string randomFolderName = Path.GetRandomFileName();
+        string SplitedImagesPath = Path.Combine(mergeFullPath, randomFolderName);
+        Directory.CreateDirectory(SplitedImagesPath);
+
+        randomFolderName = Path.GetRandomFileName();
+        string ImageWithoutWhileLinesPath = Path.Combine(mergeFullPath, randomFolderName);
+        Directory.CreateDirectory(ImageWithoutWhileLinesPath);
+
+        // обычная вариация
+
+        imageMerger.ImageMergerWithOneHeight(imageMerger.GetSortedImageFilesByDate(mergeFullPath), fullPathOfAlreadyMergedImages);
+        imageMerger.SplitAllImageFromPath(imageMerger.GetSortedImageFilesByDate(fullPathOfAlreadyMergedImages), mergeFullPath, SplitedImagesPath); 
+
+        // вариация следующая - Все изображения из папки в массив, цикл по этому массиву применяем разделение
+
+        //imageMerger.SplitAllImageFromPath(imageMerger.GetSortedImageFilesByDate(mergeFullPath), mergeFullPath, SplitedImagesPath);
+        //imageMerger.GetImagesWithoutWhiteLines(imageMerger.GetSortedImageFilesByDate(SplitedImagesPath), ImageWithoutWhileLinesPath);
+    }
+*/
+
 namespace ImageMerger
 {
     internal class imageMerger
     {
-        static string[] GetSortedImageFilesByDate(string imagesPath)
+        public static string[] GetSortedImageFilesByDate(string imagesPath)
         {
             string[] imageFiles = Directory.GetFiles(imagesPath, "*.*") // Ищем все файлы
                 .Where(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)) // Фильтруем только .png и .jpg
@@ -21,16 +52,14 @@ namespace ImageMerger
             return imageFiles;
         }
 
-        public static void ImageMergerWithOneHeight(string imagesPath)
+        public static void ImageMergerWithOneHeight(string[] imageFiles, string fullPathOfAlreadyMergedImages)
         {
-            if (!Directory.Exists(imagesPath))
+            if (!Directory.Exists(fullPathOfAlreadyMergedImages))
             {
-                Console.WriteLine("Указанная папка не существует.");
-                return;
+                Directory.CreateDirectory(fullPathOfAlreadyMergedImages);
             }
 
             // Получаем список файлов PNG, отсортированных по дате последнего изменения
-            string[] imageFiles = GetSortedImageFilesByDate(imagesPath);
             if (imageFiles.Length == 0)
             {
                 Console.WriteLine("В папке нет изображений в формате PNG.");
@@ -73,7 +102,9 @@ namespace ImageMerger
                     }
 
                     // Сохраняем итоговое изображение
-                    string outputFilePath = Path.Combine(imagesPath, "combined_image.png");
+                    string randomFileName = Path.GetRandomFileName().Replace(".", "")+ ".png";
+
+                    string outputFilePath = Path.Combine(fullPathOfAlreadyMergedImages, randomFileName); //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
                     if (File.Exists(outputFilePath)) File.Delete(outputFilePath);
                     combinedImage.Save(outputFilePath, ImageFormat.Png);
@@ -148,21 +179,17 @@ namespace ImageMerger
             }
         }
 
-        public static void SplitAllImageFromPath(string mergeFullPath, string SplitedImagesPath)
+        public static void SplitAllImageFromPath(string[] imageFiles, string mergeFullPath, string SplitedImagesPath)
         {
-            string[] imageFiles = GetSortedImageFilesByDate(mergeFullPath);
             for (int i = 0; i < imageFiles.Length; i++)
             {
-                string imgFullPathToSplit = Path.Combine(mergeFullPath, imageFiles[i]);
-                SplitImageByWhiteLines(imgFullPathToSplit, SplitedImagesPath);
+                //string imgFullPathToSplit = Path.Combine(mergeFullPath, imageFiles[i]);
+                SplitImageByWhiteLines(imageFiles[i], SplitedImagesPath);
             }
         }
 
-        public static void GetImagesWithoutWhiteLines(string imagesPath, string outputPath)
+        public static void GetImagesWithoutWhiteLines(string[] imageFiles, string outputPath)
         {
-            // Получаем список файлов изображений
-            string[] imageFiles = GetSortedImageFilesByDate(imagesPath);
-
             foreach (string imageFile in imageFiles)
             {
                 using (Bitmap bitmap = new Bitmap(imageFile))
