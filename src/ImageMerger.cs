@@ -105,7 +105,7 @@ namespace ImageMerger
                     }
 
                     // Сохраняем итоговое изображение
-                    string randomFileName = Path.GetRandomFileName().Replace(".", "") + ".png";
+                    string randomFileName = Guid.NewGuid().ToString("N") + ".png";
 
                     string outputFilePath = Path.Combine(fullPathOfAlreadyMergedImages, randomFileName); //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -167,7 +167,7 @@ namespace ImageMerger
                 }
                 else
                 {
-                    if (pixel.R < 255 || pixel.G < 255 || pixel.B < 255) // Не полностью белый
+                    if (pixel.R < 250 || pixel.G < 250 || pixel.B < 250) // Не полностью белый
                     {
                         return false;
                     }
@@ -186,8 +186,16 @@ namespace ImageMerger
             Rectangle section = new Rectangle(0, startY, bitmap.Width, height);
             using (Bitmap segment = bitmap.Clone(section, bitmap.PixelFormat))
             {
-                string fileName = Path.Combine(outputDirectory, $"segment_{startY}_{endY}.png");
-                segment.Save(fileName, ImageFormat.Png);
+                string fileName = (Path.Combine(outputDirectory, $"_segment_{startY}_{endY}_{Guid.NewGuid().ToString("N")}.png"));
+                try
+                {
+                    segment.Save(fileName, ImageFormat.Png);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка при сохранении файла {fileName}: {ex.Message}");
+                    throw;
+                }
                 Console.WriteLine($"Saved segment: {fileName}");
             }
         }
