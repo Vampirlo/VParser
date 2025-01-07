@@ -11,16 +11,17 @@ namespace ImageMerger
 {
     internal class imageMerger
     {
-        static string[] GetSortedPngFilesByDate(string imagesPath)
+        static string[] GetSortedImageFilesByDate(string imagesPath)
         {
-            string[] imageFiles = Directory.GetFiles(imagesPath, "*.png")
+            string[] imageFiles = Directory.GetFiles(imagesPath, "*.*") // Ищем все файлы
+                .Where(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)) // Фильтруем только .png и .jpg
                 .OrderBy(f => File.GetLastWriteTime(f)) // Сортируем по дате последнего изменения
                 .ToArray();
 
             return imageFiles;
         }
 
-        public static void imageMergerWithOneHeight(string imagesPath)
+        public static void ImageMergerWithOneHeight(string imagesPath)
         {
             if (!Directory.Exists(imagesPath))
             {
@@ -28,8 +29,8 @@ namespace ImageMerger
                 return;
             }
 
-            // Получаем список файлов PNG, Сортируем по дате последнего изменения
-            string[] imageFiles = GetSortedPngFilesByDate(imagesPath);
+            // Получаем список файлов PNG, отсортированных по дате последнего изменения
+            string[] imageFiles = GetSortedImageFilesByDate(imagesPath);
             if (imageFiles.Length == 0)
             {
                 Console.WriteLine("В папке нет изображений в формате PNG.");
@@ -144,6 +145,16 @@ namespace ImageMerger
                 string fileName = Path.Combine(outputDirectory, $"segment_{startY}_{endY}.png");
                 segment.Save(fileName, ImageFormat.Png);
                 Console.WriteLine($"Saved segment: {fileName}");
+            }
+        }
+
+        public static void SplitAllImageFromPath(string mergeFullPath, string SplitedImagesPath)
+        {
+            string[] imageFiles = GetSortedImageFilesByDate(mergeFullPath);
+            for (int i = 0; i < imageFiles.Length; i++)
+            {
+                string imgFullPathToSplit = Path.Combine(mergeFullPath, imageFiles[i]);
+                SplitImageByWhiteLines(imgFullPathToSplit, SplitedImagesPath);
             }
         }
     }
