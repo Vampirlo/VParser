@@ -124,7 +124,7 @@ namespace ImageMerger
             for (int x = 0; x < bitmap.Width; x++)
             {
                 Color pixel = bitmap.GetPixel(x, y);
-                if (pixel.R < 250 || pixel.G < 250 || pixel.B < 250) // Не полностью белый
+                if (pixel.R < 220 || pixel.G < 220 || pixel.B < 220) // Не полностью белый
                 {
                     return false;
                 }
@@ -155,6 +155,52 @@ namespace ImageMerger
             {
                 string imgFullPathToSplit = Path.Combine(mergeFullPath, imageFiles[i]);
                 SplitImageByWhiteLines(imgFullPathToSplit, SplitedImagesPath);
+            }
+        }
+
+        public static void GetImagesWithoutWhiteLines(string imagesPath, string outputPath)
+        {
+            // Получаем список файлов изображений
+            string[] imageFiles = GetSortedImageFilesByDate(imagesPath);
+
+            foreach (string imageFile in imageFiles)
+            {
+                using (Bitmap bitmap = new Bitmap(imageFile))
+                {
+                    // Определяем верхнюю границу (где заканчиваются белые полосы сверху)
+                    int top = 0;
+                    while (top < bitmap.Height && IsLineWhite(bitmap, top))
+                    {
+                        top++;
+                    }
+
+                    // Определяем нижнюю границу (где заканчиваются белые полосы снизу)
+                    int bottom = bitmap.Height - 1;
+                    while (bottom > top && IsLineWhite(bitmap, bottom))
+                    {
+                        bottom--;
+                    }
+
+                    // Если нужно обрезать (т.е. есть белые полосы сверху или снизу)
+                    if (top > 0 || bottom < bitmap.Height - 1)
+                    {
+                        int newHeight = bottom - top + 1;
+                        using (Bitmap croppedBitmap = bitmap.Clone(new Rectangle(0, top, bitmap.Width, newHeight), bitmap.PixelFormat))
+                        {
+                            // Генерируем путь для сохранения обрезанного изображения в выходной папке
+                            string outputFileName = Path.Combine(outputPath, Path.GetFileName(imageFile));
+
+                            // Сохраняем обрезанное изображение
+                            croppedBitmap.Save(outputFileName, ImageFormat.Png);
+
+                            Console.WriteLine($"Изображение {imageFile} было обрезано и сохранено как {outputFileName}.");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Изображение {imageFile} не содержит белых полос и осталось без изменений.");
+                    }
+                }
             }
         }
     }
