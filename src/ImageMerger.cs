@@ -9,36 +9,40 @@ using System.Threading.Tasks;
 
 /*
  * Program.cs example:
-  static void Main(string[] args)
+ using ImageMerger;
+
+namespace VParser
+{
+    internal class Program
     {
-        string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
-        string mergePathName = "merge";
-        string pathNameForMergedImages = "AlreadyMerged";
-        string mergeFullPath = Path.Combine(exeDirectory, mergePathName);
-        string fullPathOfAlreadyMergedImages = Path.Combine(mergeFullPath, pathNameForMergedImages);
+        static void Main(string[] args)
+        {
+            string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            string mergePathName = "merge";
+            string pathNameForMergedImages = "AlreadyMerged";
+            string mergeFullPath = Path.Combine(exeDirectory, mergePathName);
+            string fullPathOfAlreadyMergedImages = Path.Combine(mergeFullPath, pathNameForMergedImages);
 
-        //директория для готовых разделённых изображений и 
-        string randomFolderName = Path.GetRandomFileName();
-        string SplitedImagesPath = Path.Combine(mergeFullPath, randomFolderName);
-        Directory.CreateDirectory(SplitedImagesPath);
+            //директория для готовых разделённых изображений и 
+            string randomFolderName = Path.GetRandomFileName();
+            string SplitedImagesPath = Path.Combine(mergeFullPath, randomFolderName);
+            Directory.CreateDirectory(SplitedImagesPath);
 
-        randomFolderName = Path.GetRandomFileName();
-        string ImageWithoutWhileLinesPath = Path.Combine(mergeFullPath, randomFolderName);
-        Directory.CreateDirectory(ImageWithoutWhileLinesPath);
+            randomFolderName = Path.GetRandomFileName();
+            string ImageWithoutWhileLinesPath = Path.Combine(mergeFullPath, randomFolderName);
+            Directory.CreateDirectory(ImageWithoutWhileLinesPath);
 
-        // обычная вариация
+            // обычная вариация
 
-        //imageMerger.ImageMergerWithOneHeight(imageMerger.GetSortedImageFilesByDate(mergeFullPath), fullPathOfAlreadyMergedImages);
-        //imageMerger.SplitAllImageFromPath(imageMerger.GetSortedImageFilesByDate(fullPathOfAlreadyMergedImages), mergeFullPath, SplitedImagesPath); 
-
-        // вариация следующая - Все изображения из папки в массив, цикл по этому массиву применяем разделение
-
-        imageMerger.SplitAllImageFromPath(imageMerger.GetSortedImageFilesByDate(mergeFullPath), mergeFullPath, SplitedImagesPath);
-        imageMerger.GetImagesWithoutWhiteLines(imageMerger.GetSortedImageFilesByDate(SplitedImagesPath), ImageWithoutWhileLinesPath);
-        //or
-        imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(mergeFullPath), mergeFullPath, SplitedImagesPath, imageMerger.SplitAllImageFromPath);
-        imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(SplitedImagesPath), ImageWithoutWhileLinesPath, imageMerger.GetImagesWithoutWhiteLines);
+            imageMerger.ImageMergerWithOneHeight(imageMerger.GetSortedImageFilesByDate(mergeFullPath), fullPathOfAlreadyMergedImages);
+            imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(fullPathOfAlreadyMergedImages), mergeFullPath, SplitedImagesPath, imageMerger.SplitAllImageFromPath);
+            imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(SplitedImagesPath), ImageWithoutWhileLinesPath, imageMerger.GetImagesWithoutWhiteLines);
+            //or
+            //imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(mergeFullPath), mergeFullPath, SplitedImagesPath, imageMerger.SplitAllImageFromPath);
+            //imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(SplitedImagesPath), ImageWithoutWhileLinesPath, imageMerger.GetImagesWithoutWhiteLines);
+        }
     }
+}
 */
 
 namespace ImageMerger
