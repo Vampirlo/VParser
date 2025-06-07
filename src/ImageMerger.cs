@@ -34,12 +34,12 @@ namespace VParser
 
             // обычная вариация
 
-            imageMerger.ImageMergerWithOneHeight(imageMerger.GetSortedImageFilesByDate(mergeFullPath), fullPathOfAlreadyMergedImages);
-            imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(fullPathOfAlreadyMergedImages), mergeFullPath, SplitedImagesPath, imageMerger.SplitAllImageFromPath);
-            imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(SplitedImagesPath), ImageWithoutWhileLinesPath, imageMerger.GetImagesWithoutWhiteLines);
-            //or
-            //imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(mergeFullPath), mergeFullPath, SplitedImagesPath, imageMerger.SplitAllImageFromPath);
+            //imageMerger.ImageMergerWithOneHeight(imageMerger.GetSortedImageFilesByDate(mergeFullPath), fullPathOfAlreadyMergedImages);
+            //imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(fullPathOfAlreadyMergedImages), mergeFullPath, SplitedImagesPath, imageMerger.SplitAllImageFromPath);
             //imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(SplitedImagesPath), ImageWithoutWhileLinesPath, imageMerger.GetImagesWithoutWhiteLines);
+            //or
+            imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(mergeFullPath), mergeFullPath, SplitedImagesPath, imageMerger.SplitAllImageFromPath);
+            imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(SplitedImagesPath), ImageWithoutWhileLinesPath, imageMerger.GetImagesWithoutWhiteLines);
         }
     }
 }

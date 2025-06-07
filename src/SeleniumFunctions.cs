@@ -8,6 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using SeleniumExtras.WaitHelpers;
 using System.IO;
+using System.Diagnostics;
+using System.Collections;
 
 /* selenium program.cs
  * 
@@ -60,6 +62,182 @@ namespace VParser.src
 {
     internal class SeleniumFunctions
     {
+        public static void WaitAndClickByXPath(IWebDriver driver, string xpath, int timeoutInSeconds = 30)
+        {
+            IWebElement element = null;
+            var timeout = TimeSpan.FromSeconds(timeoutInSeconds);
+            var stopwatch = Stopwatch.StartNew();
+
+            while (stopwatch.Elapsed < timeout)
+            {
+                try
+                {
+                    element = driver.FindElement(By.XPath(xpath));
+
+                    if (element.Displayed && element.Enabled)
+                    {
+                        element.Click();
+                        return;
+                    }
+                }
+                catch (NoSuchElementException)
+                {
+                    // Элемент ещё не появился — продолжаем ждать
+                }
+                catch (StaleElementReferenceException)
+                {
+                    // DOM обновился — ждём следующую попытку
+                }
+
+                Thread.Sleep(500);
+            }
+
+            Console.WriteLine($"[WARNING] Элемент с XPath '{xpath}' не был найден или не стал кликабельным за {timeoutInSeconds} секунд.");
+        }
+
+
+        public static bool ElementExists(IWebDriver driver, string xpath)
+        {
+            try
+            {
+                var element = driver.FindElement(By.XPath(xpath));
+                return element.Displayed;
+            }
+            catch (NoSuchElementException)
+            {
+                return false;
+            }
+        }
+
+        public static void SaveTextToFile(string text)
+        {
+
+            string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            string srcUrlsFileName = "URLS.txt";
+            string srcUrlsFile = Path.Combine(exeDirectory, srcUrlsFileName);
+
+            try
+            {
+                // Убедимся, что директория существует
+                string? dir = Path.GetDirectoryName(srcUrlsFile);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+
+                // Добавляем текст в конец файла с переносом строки
+                File.AppendAllText(srcUrlsFile, text + Environment.NewLine);
+                Console.WriteLine("Добавлено в файл: " + srcUrlsFile);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Ошибка при записи в файл: " + ex.Message);
+            }
+        }
+
+        public static List<string> GetAllJpgImageSrcsIncludingCustom(IWebDriver driver)
+        {
+            var jpgUrls = new List<string>();
+
+            try
+            {
+                // Найдем все элементы с атрибутом src или data-src
+                var elementsWithSrc = driver.FindElements(By.XPath("//*[@src or @data-src]"));
+
+                foreach (var el in elementsWithSrc)
+                {
+                    string? src = el.GetAttribute("src");
+                    string? dataSrc = el.GetAttribute("data-src");
+
+                    // Проверяем оба варианта и добавляем, если jpg
+                    if (!string.IsNullOrEmpty(src) && src.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase))
+                        jpgUrls.Add(src);
+                    else if (!string.IsNullOrEmpty(dataSrc) && dataSrc.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase))
+                        jpgUrls.Add(dataSrc);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Ошибка при поиске изображений: " + ex.Message);
+            }
+
+            return jpgUrls;
+        }
+
+        public static IWebElement? WaitForElementOrNull(IWebDriver driver, string xpath, int timeoutInSeconds = 10)
+        {
+            try
+            {
+                WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutInSeconds));
+                return wait.Until(drv =>
+                {
+                    try
+                    {
+                        var element = drv.FindElement(By.XPath(xpath));
+                        return element.Displayed ? element : null;
+                    }
+                    catch (NoSuchElementException)
+                    {
+                        return null;
+                    }
+                });
+            }
+            catch (WebDriverTimeoutException)
+            {
+                return null;
+            }
+        }
+
+        public static async Task VIPDownloader(string url, ChromeOptions options)
+        {
+        start:
+
+            IWebDriver driver = new ChromeDriver();
+            driver.Navigate().GoToUrl(url);
+
+            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+            WaitAndClickByXPath(driver, "//div[contains(@class, 'uni-modal__btn') and contains(@class, 'uni-modal__btn_default') and normalize-space(text())='Cancel']");
+            WaitAndClickByXPath(driver, "/html/body/uni-app/uni-page/uni-page-wrapper/uni-page-body/uni-view/uni-view[1]/uni-view/uni-button");
+            wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+            WaitAndClickByXPath(driver, "//div[contains(@class, 'uni-modal__btn') and contains(@class, 'uni-modal__btn_default') and normalize-space(text())='Cancel']");
+
+            wait = new WebDriverWait(driver, TimeSpan.FromSeconds(20));
+
+            // Попробуем найти кнопку воспроизведения — если она есть, кликнем
+            string playButtonXPath = "//*[@id=\"brannerViewId\"]/uni-swiper/div/div/div/uni-swiper-item[1]/uni-view[1]/uni-view[2]";
+
+            if (ElementExists(driver, playButtonXPath))
+            {
+                Console.WriteLine("Есть кнопка ебаная");
+                WaitAndClickByXPath(driver, playButtonXPath);
+                WaitAndClickByXPath(driver, "/html/body/uni-app/uni-modal/div[2]/div[3]/div[2]");
+
+                IWebElement videoElement = driver.FindElement(By.XPath("//*[@id=\"myVideo\"]/div/video"));
+                string videoSrc = videoElement.GetAttribute("src");
+
+                SaveTextToFile(videoSrc);
+            }
+            else
+            {
+                Console.WriteLine("Кнопка воспроизведения не найдена, продолжаем без неё.");
+            }
+
+            List<string> jpgUrls = GetAllJpgImageSrcsIncludingCustom(driver);
+
+            if (jpgUrls.Count < 20)
+            {
+                driver.Quit();
+                goto start;
+            }
+
+
+            foreach (var singlejpgUrl in jpgUrls)
+            {
+                SaveTextToFile(singlejpgUrl);
+            }
+
+            driver.Close();
+        }
         public static async Task GetImageFromXiaohongshuURLAsync(string url, int MinutesToWaitSiteLoading)
         {
             IWebDriver driver = new ChromeDriver();
