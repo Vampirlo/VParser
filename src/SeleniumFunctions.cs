@@ -192,10 +192,15 @@ namespace VParser.src
         {
         start:
 
+            int pizdec = 0;
+
             IWebDriver driver = new ChromeDriver();
             driver.Navigate().GoToUrl(url);
 
             WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+
+        tryagain:
+
             WaitAndClickByXPath(driver, "//div[contains(@class, 'uni-modal__btn') and contains(@class, 'uni-modal__btn_default') and normalize-space(text())='Cancel']");
             WaitAndClickByXPath(driver, "/html/body/uni-app/uni-page/uni-page-wrapper/uni-page-body/uni-view/uni-view[1]/uni-view/uni-button");
             wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
@@ -226,8 +231,13 @@ namespace VParser.src
 
             if (jpgUrls.Count < 20)
             {
-                driver.Quit();
-                goto start;
+                pizdec++;
+                if (pizdec > 2)
+                {
+                    driver.Quit();
+                    goto start;
+                }
+                goto tryagain;
             }
 
 
