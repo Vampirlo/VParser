@@ -5,6 +5,17 @@ using SeleniumExtras.WaitHelpers;
 using System.Net;
 using VParser.src;
 
+/*
+ Settings.ini
+
+[SETTINGS]
+XiaohongshuDownloadDirectory=
+MinutesToWaitSiteLoading=30
+[PROXY]
+UseProxy=true
+ProxySettings=login:password@ip:port
+ */
+
 namespace VParser
 {
     internal class Program
@@ -15,55 +26,14 @@ namespace VParser
             string iniFileName = "Settings.ini";
             string iniFIlepath = Path.Combine(exeDirectory, iniFileName);
             string XiaohongshuDownloadDirectory = string.Empty;
+            string yappyLinks = (Path.Combine(exeDirectory, "links yappy.txt"));
             int MinutesToWaitSiteLoading = 30;
-            string srcUrlsFileName = "URLS.txt";
-            string srcUrlsFile = Path.Combine(exeDirectory, srcUrlsFileName);
-            string downloadFolderName = "Downloads";
-            string downloadFolder = Path.Combine(exeDirectory, downloadFolderName);
-            Directory.CreateDirectory(downloadFolder);
-
-            string VIPLinksFileName = "VIP.txt";
-            string VIPLinksFile = Path.Combine(exeDirectory, VIPLinksFileName);
-
-            string douyinDownloadDirectory = Path.Combine(exeDirectory, "DouyinDowloads"); //затем считывать из ini, если пусто - задавать автоматически
-            // перед нажатием на кнопку скачать - каунт файлов сейвить и сравнивать после нажатия на кнопку, и когда каунт не будет равен друг другу - продолжать скачивание
-            var options = new ChromeOptions();
-
-            //ini file check
-            if (!File.Exists(iniFIlepath))
-                VParser.src.tools.iniFileCreate(iniFIlepath);
-
-            INIManager manager = new INIManager(iniFIlepath);
-
-            XiaohongshuDownloadDirectory = manager.GetPrivateString("SETTINGS", "XiaohongshuDownloadDirectory");
-            MinutesToWaitSiteLoading = int.Parse(manager.GetPrivateString("SETTINGS", "MinutesToWaitSiteLoading"));
-
-            options.AddUserProfilePreference("download.default_directory", douyinDownloadDirectory);  // Указываем папку загрузки
-            options.AddUserProfilePreference("download.prompt_for_download", false);  // Отключаем запрос на подтверждение загрузки
-            options.AddUserProfilePreference("download.directory_upgrade", true);
-            options.AddUserProfilePreference("safebrowsing.enabled", true);  // Отключаем предупреждения Safe Browsing
 
 
-            if (!File.Exists(VIPLinksFile))
-            {
-                Console.WriteLine($"Приложение по пути '{VIPLinksFile}' не найдено. Завершение работы.");
-                Environment.Exit(1);
-            }
+            string DownloadDirectory = Path.Combine(exeDirectory, "Downloads"); //затем считывать из ini, если пусто - задавать автоматически
 
-            string[] VIPLinksFromFile = File.ReadAllLines(VIPLinksFile);
-
-            foreach (var _url in VIPLinksFromFile)
-            {
-                if (!string.IsNullOrWhiteSpace(_url))
-                {
-                    await VParser.src.SeleniumFunctions.VIPDownloader(_url, options);
-                }
-            }
-
-            VParser.src.tools.CleanUrlsInFile(srcUrlsFile);
-            VParser.src.tools.RemoveDuplicateLines(srcUrlsFile);
-
-            await VParser.src.tools.DownloadFilesFromUrls(srcUrlsFile, downloadFolder);
+            VParser.src.tools.ConvertYappyLinksToRutubeCDN(yappyLinks);
+            await VParser.src.tools.DownloadFilesFromUrls(yappyLinks, DownloadDirectory, useUniqueNames: true);
         }
     }
 }
