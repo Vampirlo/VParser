@@ -66,7 +66,7 @@ namespace ImageMerger
                 Directory.CreateDirectory(fullPathOfAlreadyMergedImages);
             }
 
-            // Получаем список файлов PNG, отсортированных по дате последнего изменения
+            // Получаем список файлов PNG, отсортированных по дате последнего изменения udp: кто эту хуйню тут написал вообще?
             if (imageFiles.Length == 0)
             {
                 Console.WriteLine("В папке нет изображений в формате PNG.");
@@ -133,7 +133,7 @@ namespace ImageMerger
 
                 for (int y = 0; y < bitmap.Height; y++)
                 {
-                    bool isCurrentLineWhite = IsLineWhite(bitmap, y, false);
+                    bool isCurrentLineWhite = IsLineWhite(bitmap, y, false); // вот эту фолс или тру что здесь нахуй, надо как-то учитывать и брать из интерфейса и атвоматизировать не заранее написанный цвет 220, а самому вводить в поле
 
                     if (isCurrentLineWhite && !isPreviousLineWhite)
                     {

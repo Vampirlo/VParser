@@ -5,35 +5,37 @@ using SeleniumExtras.WaitHelpers;
 using System.Net;
 using VParser.src;
 
-/*
- Settings.ini
-
-[SETTINGS]
-XiaohongshuDownloadDirectory=
-MinutesToWaitSiteLoading=30
-[PROXY]
-UseProxy=true
-ProxySettings=login:password@ip:port
- */
+using ImageMerger;
 
 namespace VParser
 {
     internal class Program
     {
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
             string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            string iniFileName = "Settings.ini";
-            string iniFIlepath = Path.Combine(exeDirectory, iniFileName);
-            string XiaohongshuDownloadDirectory = string.Empty;
-            string yappyLinks = (Path.Combine(exeDirectory, "links yappy.txt"));
-            int MinutesToWaitSiteLoading = 30;
+            string mergePathName = "merge";
+            string pathNameForMergedImages = "AlreadyMerged";
+            string mergeFullPath = Path.Combine(exeDirectory, mergePathName);
+            string fullPathOfAlreadyMergedImages = Path.Combine(mergeFullPath, pathNameForMergedImages);
 
+            //директория для готовых разделённых изображений и 
+            string randomFolderName = Path.GetRandomFileName();
+            string SplitedImagesPath = Path.Combine(mergeFullPath, randomFolderName);
+            Directory.CreateDirectory(SplitedImagesPath);
 
-            string DownloadDirectory = Path.Combine(exeDirectory, "Downloads"); //затем считывать из ini, если пусто - задавать автоматически
+            randomFolderName = Path.GetRandomFileName();
+            string ImageWithoutWhileLinesPath = Path.Combine(mergeFullPath, randomFolderName);
+            Directory.CreateDirectory(ImageWithoutWhileLinesPath);
 
-            VParser.src.tools.ConvertYappyLinksToRutubeCDN(yappyLinks);
-            await VParser.src.tools.DownloadFilesFromUrls(yappyLinks, DownloadDirectory, useUniqueNames: true);
+            // обычная вариация
+
+            imageMerger.ImageMergerWithOneHeight(imageMerger.GetSortedImageFilesByDate(mergeFullPath), fullPathOfAlreadyMergedImages);
+            imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(fullPathOfAlreadyMergedImages), mergeFullPath, SplitedImagesPath, imageMerger.SplitAllImageFromPath);
+            imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(SplitedImagesPath), ImageWithoutWhileLinesPath, imageMerger.GetImagesWithoutWhiteLines);
+            //or
+            //imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(mergeFullPath), mergeFullPath, SplitedImagesPath, imageMerger.SplitAllImageFromPath);
+            //imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(SplitedImagesPath), ImageWithoutWhileLinesPath, imageMerger.GetImagesWithoutWhiteLines);
         }
     }
 }
