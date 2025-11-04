@@ -6,6 +6,9 @@ using System.Net;
 using VParser.src;
 
 using ImageMerger;
+using OpenQA.Selenium.Interactions;
+using System.Xml;
+using Newtonsoft.Json;
 
 namespace VParser
 {
@@ -13,29 +16,19 @@ namespace VParser
     {
         static void Main(string[] args)
         {
+            //string cookiesFilePath = VParser.src.SeleniumFunctions.GetCookies("https://sync.beatoven.ai/home", "beatoven");
+
             string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            string mergePathName = "merge";
-            string pathNameForMergedImages = "AlreadyMerged";
-            string mergeFullPath = Path.Combine(exeDirectory, mergePathName);
-            string fullPathOfAlreadyMergedImages = Path.Combine(mergeFullPath, pathNameForMergedImages);
 
-            //директория для готовых разделённых изображений и 
-            string randomFolderName = Path.GetRandomFileName();
-            string SplitedImagesPath = Path.Combine(mergeFullPath, randomFolderName);
-            Directory.CreateDirectory(SplitedImagesPath);
+            string driverPath = Path.Combine(exeDirectory, "chromedriver.exe");
+            string cookiesFileName = "beatoven";
+            string cookieFolderName = "cookies";
+            string cookieFolderPath = Path.Combine(exeDirectory, cookieFolderName);
+            string cookiesFileNameWithExtension = cookiesFileName + ".json";
+            string cookieFilePath = Path.Combine(cookieFolderPath, cookiesFileNameWithExtension);
+            Directory.CreateDirectory(cookieFolderPath);
 
-            randomFolderName = Path.GetRandomFileName();
-            string ImageWithoutWhileLinesPath = Path.Combine(mergeFullPath, randomFolderName);
-            Directory.CreateDirectory(ImageWithoutWhileLinesPath);
-
-            // обычная вариация
-
-            imageMerger.ImageMergerWithOneHeight(imageMerger.GetSortedImageFilesByDate(mergeFullPath), fullPathOfAlreadyMergedImages);
-            imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(fullPathOfAlreadyMergedImages), mergeFullPath, SplitedImagesPath, imageMerger.SplitAllImageFromPath);
-            imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(SplitedImagesPath), ImageWithoutWhileLinesPath, imageMerger.GetImagesWithoutWhiteLines);
-            //or
-            //imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(mergeFullPath), mergeFullPath, SplitedImagesPath, imageMerger.SplitAllImageFromPath);
-            //imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(SplitedImagesPath), ImageWithoutWhileLinesPath, imageMerger.GetImagesWithoutWhiteLines);
+            VParser.src.SeleniumFunctions.GetCookies("https://www.xiaohongshu.com/", "xiaohongshu");
         }
     }
 }

@@ -11,6 +11,8 @@ using System.IO;
 using System.Diagnostics;
 using System.Collections;
 using OpenQA.Selenium.Firefox;
+using Newtonsoft.Json;
+using System.Xml.Linq;
 
 /* selenium program.cs
  * 
@@ -199,7 +201,7 @@ namespace VParser.src
         }
 
         /*
-         using OpenQA.Selenium;
+using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.WaitHelpers;
@@ -611,6 +613,84 @@ namespace VParser
                     break;
                 }
             }
+        }
+
+        public static string GetCookies(string URL, string cookiesFileName)
+        {
+            string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
+
+            string driverPath = Path.Combine(exeDirectory, "chromedriver.exe");
+
+            string cookieFolderName = "cookies";
+            string cookieFolderPath = Path.Combine(exeDirectory, cookieFolderName);
+            string cookiesFileNameWithExtension = cookiesFileName + ".json";
+            string cookieFilePath = Path.Combine(cookieFolderPath, cookiesFileNameWithExtension);
+            Directory.CreateDirectory(cookieFolderPath);
+
+            IWebDriver driver = new ChromeDriver();
+            driver.Navigate().GoToUrl(URL);
+
+            System.Threading.Thread.Sleep(300000);
+
+            // Получаем все куки
+            var cookies = driver.Manage().Cookies.AllCookies;
+
+            // Сохраняем в JSON файл
+            var cookieList = new List<Dictionary<string, object>>();
+            foreach (var c in cookies)
+            {
+                cookieList.Add(new Dictionary<string, object>
+                {
+                    {"Name", c.Name},
+                    {"Value", c.Value},
+                    {"Domain", c.Domain},
+                    {"Path", c.Path},
+                    {"Expiry", c.Expiry},
+                    {"Secure", c.Secure},
+                    {"IsHttpOnly", c.IsHttpOnly}
+                });
+            }
+
+            string json = JsonConvert.SerializeObject(cookieList, Newtonsoft.Json.Formatting.Indented);
+            File.WriteAllText(cookieFilePath, json);
+
+            driver.Quit();
+            return cookieFilePath;
+        }
+
+        public static void SetCookies(string URL, string cookiesFilePath)
+        {
+            IWebDriver driver = new ChromeDriver();
+
+            driver.Navigate().GoToUrl(URL);
+
+            var json = File.ReadAllText(cookiesFilePath);
+            var cookieList = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(json);
+
+            foreach (var c in cookieList)
+            {
+                var cookie = new Cookie(
+                    c["Name"].ToString(),
+                    c["Value"].ToString(),
+                    c["Domain"].ToString(),
+                    c["Path"].ToString(),
+                    c["Expiry"] != null ? (DateTime?)DateTime.Parse(c["Expiry"].ToString()) : null,
+                    (bool)c["Secure"],
+                    (bool)c["IsHttpOnly"],
+                    null
+                );
+
+                try
+                {
+                    driver.Manage().Cookies.AddCookie(cookie);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка при добавлении cookie {c["Name"]}: {ex.Message}");
+                }
+            }
+
+            driver.Navigate().GoToUrl(URL);
         }
     }
 }
