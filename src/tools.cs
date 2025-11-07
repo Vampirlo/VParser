@@ -245,5 +245,47 @@ namespace VParser
 
             return null; // Не удалось извлечь ID
         }
+
+        /////////////////////////////////////////XIAOHONGSHU//////////////////////////////////////////////////////////////////////////////////////
+
+        // Метод для извлечения имен изображений
+        public static List<string> ExtractImageNames(string htmlPath)
+        {
+            if (!File.Exists(htmlPath))
+                throw new FileNotFoundException("HTML file not found.", htmlPath);
+
+            string html = File.ReadAllText(htmlPath);
+
+            // Регулярное выражение ищет последовательности символов, похожие на имена файлов
+            // вроде "1040g00831ohs6id6580g5p49hch7oha8k72lqc0"
+            var regex = new Regex(@"1040[a-z0-9]+", RegexOptions.IgnoreCase);
+
+            var result = new HashSet<string>();
+            foreach (Match m in regex.Matches(html))
+            {
+                result.Add(m.Value);
+            }
+
+            return new List<string>(result);
+        }
+
+        // Метод для извлечения имен видео файлов @"u002F([a-z0-9_]+?)\.mp4"
+        public static List<string> ExtractVideoNames(string htmlPath)
+        {
+            if (!File.Exists(htmlPath))
+                throw new FileNotFoundException("HTML file not found.", htmlPath);
+
+            string html = File.ReadAllText(htmlPath);
+
+            var regex = new Regex(@"u002F([a-z0-9_]+?)\.mp4", RegexOptions.IgnoreCase);
+
+            var result = new HashSet<string>();
+            foreach (Match m in regex.Matches(html))
+            {
+                result.Add(m.Value);
+            }
+
+            return new List<string>(result);
+        }
     }
 }

@@ -332,36 +332,15 @@ namespace VParser
 
             driver.Close();
         }
-        public static async Task GetImageFromXiaohongshuURLAsync(string url, int MinutesToWaitSiteLoading)
+        public static async Task GetImageFromXiaohongshuURLAsync(IWebDriver driver, string url, int MinutesToWaitSiteLoading)
         {
-            IWebDriver driver = new ChromeDriver();
             driver.Navigate().GoToUrl(url);
 
-            // Ожидание загрузки элемента
-            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromMinutes(MinutesToWaitSiteLoading));
-            wait.Until(d => d.FindElement(By.ClassName("swiper-wrapper"))); // Ожидание загрузки элемента
-            wait.Until(d => d.FindElement(By.ClassName("content-container")));
+            // Получаем HTML всей страницы
+            string pageSource = driver.PageSource;
+            string allHTMLPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "page.html");
 
-            // Получаем все изображения из элемента swiper-wrapper
-            var swiperImages = driver.FindElements(By.CssSelector(".swiper-wrapper img.carousel-image"));
-            var swiperSrcLinks = swiperImages.Select(img => img.GetAttribute("src")).ToList();
-
-            // Получаем все изображения из элемента content-container
-            var contentImages = driver.FindElements(By.CssSelector(".content-container img"));
-            var contentSrcLinks = contentImages.Select(img => img.GetAttribute("src")).ToList();
-
-            // Объединяем ссылки из обоих элементов
-            var allSrcLinks = swiperSrcLinks.Concat(contentSrcLinks).ToList();
-
-            // Путь для сохранения текстового файла
-            string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "image_links.txt");
-
-            // Сохраняем ссылки в текстовый файл
-            await File.AppendAllLinesAsync(filePath, allSrcLinks);
-
-            Console.WriteLine($"Ссылки на изображения сохранены в {filePath}"); // нужно будет прям тут и скачивать и дожидлаться скачки
-
-            driver.Close();
+            File.WriteAllText(allHTMLPath, pageSource);
         }
 
         public static async Task MultiplyDouyinVideoDownloadAsync(ChromeOptions options)
@@ -575,15 +554,12 @@ namespace VParser
 
             while (true)
             {
-                //var scrollHeightA = ((IJavaScriptExecutor)driver).ExecuteScript("return window.scrollY;");
                 var scrollHeightA = (long)js.ExecuteScript("return window.scrollY;");
 
                 js.ExecuteScript($"window.scrollBy(0, 100);");
                 System.Threading.Thread.Sleep(10);
 
-                //var scrollHeightB = ((IJavaScriptExecutor)driver).ExecuteScript("return window.scrollY;");
                 var scrollHeightB = (long)js.ExecuteScript("return window.scrollY;");
-                //var documentHeight = (long)js.ExecuteScript("return document.body.scrollHeight;");
                 var documentHeight = Convert.ToInt64(js.ExecuteScript("return document.body.scrollHeight;"));
 
                 if (scrollHeightA == scrollHeightB || scrollHeightB + 200 >= documentHeight)
@@ -615,11 +591,13 @@ namespace VParser
             }
         }
 
+        /*
+        The cookie name is passed without the json extension.
+        The file will be saved at exe/cookies/cookiesFileName.json
+         */
         public static string GetCookies(string URL, string cookiesFileName)
         {
             string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
-
-            string driverPath = Path.Combine(exeDirectory, "chromedriver.exe");
 
             string cookieFolderName = "cookies";
             string cookieFolderPath = Path.Combine(exeDirectory, cookieFolderName);
@@ -632,10 +610,10 @@ namespace VParser
 
             System.Threading.Thread.Sleep(300000);
 
-            // Получаем все куки
+            // Get all cookies
             var cookies = driver.Manage().Cookies.AllCookies;
 
-            // Сохраняем в JSON файл
+            // Save to JSON file
             var cookieList = new List<Dictionary<string, object>>();
             foreach (var c in cookies)
             {
@@ -658,10 +636,11 @@ namespace VParser
             return cookieFilePath;
         }
 
-        public static void SetCookies(string URL, string cookiesFilePath)
+        /*
+         cookies will be saved in the following path C:\vs_proj\VParser\bin\Debug\net8.0\cookies\xiaohongshu.json
+         */
+        public static void SetCookies(IWebDriver driver, string URL, string cookiesFilePath)
         {
-            IWebDriver driver = new ChromeDriver();
-
             driver.Navigate().GoToUrl(URL);
 
             var json = File.ReadAllText(cookiesFilePath);
@@ -692,5 +671,6 @@ namespace VParser
 
             driver.Navigate().GoToUrl(URL);
         }
+
     }
 }
