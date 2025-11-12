@@ -191,15 +191,6 @@ namespace VParser.src
             }
         }
 
-        public static async Task xiaDownloader(string url, ChromeOptions options)
-        {
-            IWebDriver driver = new ChromeDriver(options);
-            driver.Navigate().GoToUrl(url);
-
-            // Не забывайте закрыть драйвер
-            //driver.Quit();
-        }
-
         /*
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
@@ -409,6 +400,12 @@ namespace VParser
 }
         12.11.2025
          */
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="driver"></param>
+        /// <param name="url"></param>
+        /// <returns></returns>
         public static async Task<string> XiaohongshuDownloaderHTML(IWebDriver driver, string url)
         {
             string htmlSitesFolderName = "XiaohongshuDownloaderAllHTMLPages";
@@ -421,18 +418,19 @@ namespace VParser
             driver.Navigate().GoToUrl(url);
 
             // Get HTML
-            int maxWaitSeconds = 30;
+            int maxWaitSeconds = 30000000;
             int elapsed = 0;
 
             while (elapsed < maxWaitSeconds)
             {
                 string pageSource = driver.PageSource;
+                File.WriteAllText(HTMLFilePath, pageSource);
                 if (pageSource.Contains("1040") || pageSource.Contains(".mp4"))
                 {
                     File.WriteAllText(HTMLFilePath, pageSource);
                     return HTMLFilePath;
                 }
-                await Task.Delay(1000);
+                await Task.Delay(10);
                 elapsed++;
             }
 

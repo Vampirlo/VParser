@@ -20,7 +20,7 @@ namespace VParser
             string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
             string mergePathName = "merge";
             string pathNameForMergedImages = "AlreadyMerged";
-            string mergeFullPath = Path.Combine(exeDirectory, mergePathName);
+            string mergeFullPath = Path.Combine(exeDirectory, mergePathName); // мб её создавать ещё надо? 
             string fullPathOfAlreadyMergedImages = Path.Combine(mergeFullPath, pathNameForMergedImages);
 
             //директория для готовых разделённых изображений и 

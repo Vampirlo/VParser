@@ -27,7 +27,10 @@ namespace VParser
 
             string command = args[0];
             string parameter = args[1];
-            string urlToDownload = args[2];
+            string? urlToDownload = null; 
+
+            if (args.Length >= 3)
+                urlToDownload = args[2];
 
             string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
             string driverPath = Path.Combine(exeDirectory, "chromedriver.exe");
