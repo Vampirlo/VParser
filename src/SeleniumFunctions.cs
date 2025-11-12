@@ -332,15 +332,113 @@ namespace VParser
 
             driver.Close();
         }
-        public static async Task GetImageFromXiaohongshuURLAsync(IWebDriver driver, string url, int MinutesToWaitSiteLoading)
+
+        /*
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Support.UI;
+using SeleniumExtras.WaitHelpers;
+using System.Net;
+using VParser.src;
+
+using ImageMerger;
+using OpenQA.Selenium.Interactions;
+using System.Xml;
+using Newtonsoft.Json;
+using System.Net.Http;
+
+namespace VParser
+{
+    internal class Program
+    {
+        static async Task Main(string[] args)
         {
+            if (args.Length < 2)
+            {
+                Console.WriteLine("How to use:");
+                Console.WriteLine("1) To get cookies   : GetCookies    <Domain URL for get cookie>");
+                Console.WriteLine("2) To download files: DownloadFiles <Domain URL for set cookie> <URL to download>");
+                return;
+            }
+
+            string command = args[0];
+            string parameter = args[1];
+            string urlToDownload = args[2];
+
+            string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            string driverPath = Path.Combine(exeDirectory, "chromedriver.exe");
+            string cookiesFileName = "xiaohongshu";
+            string cookieFolderName = "cookies";
+            string cookieFolderPath = Path.Combine(exeDirectory, cookieFolderName);
+            string cookiesFileNameWithExtension = cookiesFileName + ".json";
+            string cookieFilePath = Path.Combine(cookieFolderPath, cookiesFileNameWithExtension);
+            Directory.CreateDirectory(cookieFolderPath);
+
+            switch (command.ToLower())
+            {
+                case "getcookies":
+                    SeleniumFunctions.GetCookies(parameter, "xiaohongshu");
+                    break;
+
+                case "downloadfiles":
+                    IWebDriver driver = new ChromeDriver();
+                    SeleniumFunctions.SetCookies(driver, parameter, cookieFilePath);
+                    string htmlFile = await SeleniumFunctions.XiaohongshuDownloaderHTML(driver, urlToDownload);
+                    driver.Close();
+
+                    // скачивается иногда bin, наверное все bin будут .mp4 
+                    //подписать все методы
+                    List<string> imageNames = tools.XiaohongshuExtractImageNames(htmlFile);
+                    List<string> videoNames = tools.XiaohongshuExtractVideoNames(htmlFile);
+
+                    List<string> AllFilesNames = imageNames.Concat(videoNames).ToList();
+
+                    List<string> AllFilesURL = tools.XiaohongshuGetURLToAllFiles(AllFilesNames);
+
+                    string FinalDirectotyWithDownloadedFiles = await tools.XiaohongshuFileDownloader(AllFilesURL, urlToDownload);
+
+                    Console.WriteLine(FinalDirectotyWithDownloadedFiles);
+                    break;
+
+                default:
+                    Console.WriteLine("Неизвестная команда. Используйте GetCookies или DownloadFiles.");
+                    break;
+            }
+        }
+    }
+}
+        12.11.2025
+         */
+        public static async Task<string> XiaohongshuDownloaderHTML(IWebDriver driver, string url)
+        {
+            string htmlSitesFolderName = "XiaohongshuDownloaderAllHTMLPages";
+            string htmlSitesFolderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, htmlSitesFolderName);
+            Directory.CreateDirectory(htmlSitesFolderPath);
+
+            string htmlFileName = tools.ExtractNameFromUrl(url) + ".html";
+            string HTMLFilePath = Path.Combine(htmlSitesFolderPath, htmlFileName);
+
             driver.Navigate().GoToUrl(url);
 
-            // Получаем HTML всей страницы
-            string pageSource = driver.PageSource;
-            string allHTMLPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "page.html");
+            // Get HTML
+            int maxWaitSeconds = 30;
+            int elapsed = 0;
 
-            File.WriteAllText(allHTMLPath, pageSource);
+            while (elapsed < maxWaitSeconds)
+            {
+                string pageSource = driver.PageSource;
+                if (pageSource.Contains("1040") || pageSource.Contains(".mp4"))
+                {
+                    File.WriteAllText(HTMLFilePath, pageSource);
+                    return HTMLFilePath;
+                }
+                await Task.Delay(1000);
+                elapsed++;
+            }
+
+            Console.WriteLine("HTML is Empty");
+            Environment.Exit(0);
+            return HTMLFilePath; // ну это просто смешно
         }
 
         public static async Task MultiplyDouyinVideoDownloadAsync(ChromeOptions options)
@@ -591,10 +689,13 @@ namespace VParser
             }
         }
 
-        /*
-        The cookie name is passed without the json extension.
-        The file will be saved at exe/cookies/cookiesFileName.json
-         */
+        /// <summary>
+        /// The cookie name is passed without the json extension.
+        /// The file will be saved at exe/cookies/cookiesFileName.json
+        /// </summary>
+        /// <param name="URL">example https://www.xiaohongshu.com/</param>
+        /// <param name="cookiesFileName">example xiaohongshu</param>
+        /// <returns></returns>
         public static string GetCookies(string URL, string cookiesFileName)
         {
             string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;

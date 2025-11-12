@@ -249,7 +249,7 @@ namespace VParser
         /////////////////////////////////////////XIAOHONGSHU//////////////////////////////////////////////////////////////////////////////////////
 
         // Метод для извлечения имен изображений
-        public static List<string> ExtractImageNames(string htmlPath)
+        public static List<string> XiaohongshuExtractImageNames(string htmlPath)
         {
             if (!File.Exists(htmlPath))
                 throw new FileNotFoundException("HTML file not found.", htmlPath);
@@ -269,15 +269,16 @@ namespace VParser
             return new List<string>(result);
         }
 
-        // Метод для извлечения имен видео файлов @"u002F([a-z0-9_]+?)\.mp4"
-        public static List<string> ExtractVideoNames(string htmlPath)
+        // Метод для извлечения имен видео файлов @"u002F([a-z0-9_]+?)\.mp4" брать с u002F
+        //                              без u002F @"(?<=u002F)([a-z0-9_]+?)\.mp4"
+        public static List<string> XiaohongshuExtractVideoNames(string htmlPath)
         {
             if (!File.Exists(htmlPath))
                 throw new FileNotFoundException("HTML file not found.", htmlPath);
 
             string html = File.ReadAllText(htmlPath);
 
-            var regex = new Regex(@"u002F([a-z0-9_]+?)\.mp4", RegexOptions.IgnoreCase);
+            var regex = new Regex(@"(?<=u002F)([a-z0-9_]+?)\.mp4", RegexOptions.IgnoreCase);
 
             var result = new HashSet<string>();
             foreach (Match m in regex.Matches(html))
@@ -286,6 +287,109 @@ namespace VParser
             }
 
             return new List<string>(result);
+        }
+
+        public static List<string> XiaohongshuGetURLToAllFiles(List<string> files)
+        {
+            var updatedFiles = new List<string>();
+
+            for (int i = 0; i < files.Count; i++)
+            {
+                string file = files[i];
+
+                if (file.StartsWith("1040"))
+                {
+                    updatedFiles.Add($"https://sns-img-hw.xhscdn.com/{file}?imageView2/2/w/0/format/png");
+                    updatedFiles.Add($"https://sns-video-bd.xhscdn.com/spectrum/{file}");
+                    updatedFiles.Add($"https://sns-webpic.xhscdn.com/spectrum/{file}?imageView2/2/w/0/format/png");
+                }
+                else if (file.StartsWith("0"))
+                {
+                    updatedFiles.Add($"https://sns-video-al.xhscdn.com/stream/1/10/19/{file}");
+                }
+            }
+            return updatedFiles;
+        }
+
+        /// <summary>
+        /// Асинхронно скачивает медиафайлы по ссылкам и сохраняет их в папку, чьё название берётся по имени ссылки на медиафайлы.
+        /// </summary>
+        /// <param name="urls">Список ссылок на файлы.</param>
+        /// <param name="baseDirectory">Папка, где будет создана подпапка (по умолчанию текущая)</param>
+        public static async Task<string> XiaohongshuFileDownloader(List<string> urls, string mainLink)
+        {
+            //Directory
+            string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            string XiaohongshuDownloadFolderName = "XiaohongshuDownload";
+            string XiaohongshuDownloadFolderPath = Path.Combine(exeDirectory, XiaohongshuDownloadFolderName);
+            string XiaohongshuPostDownloadFolderName = ExtractNameFromUrl(mainLink);
+            string XiaohongshuPostDownloadFolderPath = Path.Combine(XiaohongshuDownloadFolderPath, XiaohongshuPostDownloadFolderName);
+
+            Directory.CreateDirectory(XiaohongshuPostDownloadFolderPath);
+
+            using HttpClient client = new HttpClient();
+
+            // Limit simultaneous downloads to 5
+            using SemaphoreSlim semaphore = new SemaphoreSlim(5);
+
+            // Download files async
+            var downloadTasks = new List<Task>();
+
+            foreach (var url in urls)
+            {
+                await semaphore.WaitAsync();
+
+                downloadTasks.Add(Task.Run(async () =>
+                {
+                    try
+                    {
+                        // Extract filename
+                        string fileName = Path.GetFileName(new Uri(url).AbsolutePath);
+
+                        // Add extension if missing
+                        if (!fileName.Contains('.'))
+                        {
+                            if (url.Contains("format/png") || url.EndsWith("png"))
+                                fileName += ".png";
+                            else if (url.EndsWith(".mp4") || url.Contains("/stream/"))
+                                fileName += ".mp4";
+                            else
+                                fileName += ".bin"; // fallback
+                        }
+
+                        string filePath = Path.Combine(XiaohongshuPostDownloadFolderPath, fileName);
+
+                        var bytes = await client.GetByteArrayAsync(url);
+                        await File.WriteAllBytesAsync(filePath, bytes);
+
+                        Console.WriteLine($"✅ Downloaded: {fileName}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"❌ Failed to download {url}: {ex.Message}");
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                }));
+            }
+
+            await Task.WhenAll(downloadTasks);
+
+            return XiaohongshuPostDownloadFolderPath;
+        }
+
+        /// <summary>
+        /// http://xhslink.com/o/8sDMR7HKKej -> 8sDMR7HKKej
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        internal static string ExtractNameFromUrl(string url)
+        {
+            // Пример: http://xhslink.com/o/8sDMR7HKKej -> 8sDMR7HKKej
+            var match = Regex.Match(url, @"\/([A-Za-z0-9_-]+)$");
+            return match.Success ? match.Groups[1].Value : Guid.NewGuid().ToString();
         }
     }
 }

@@ -17,8 +17,19 @@ namespace VParser
     {
         static async Task Main(string[] args)
         {
-            string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            if (args.Length < 2)
+            {
+                Console.WriteLine("How to use:");
+                Console.WriteLine("1) To get cookies   : GetCookies    <Domain URL for get cookie>");
+                Console.WriteLine("2) To download files: DownloadFiles <Domain URL for set cookie> <URL to download>");
+                return;
+            }
 
+            string command = args[0];
+            string parameter = args[1];
+            string urlToDownload = args[2];
+
+            string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
             string driverPath = Path.Combine(exeDirectory, "chromedriver.exe");
             string cookiesFileName = "xiaohongshu";
             string cookieFolderName = "cookies";
@@ -27,28 +38,35 @@ namespace VParser
             string cookieFilePath = Path.Combine(cookieFolderPath, cookiesFileNameWithExtension);
             Directory.CreateDirectory(cookieFolderPath);
 
-            //VParser.src.SeleniumFunctions.GetCookies("https://www.xiaohongshu.com/", "xiaohongshu");
-
-
-            //IWebDriver driver = new ChromeDriver();
-
-            //VParser.src.SeleniumFunctions.SetCookies(driver, "https://www.xiaohongshu.com/", cookieFilePath);
-            //await VParser.src.SeleniumFunctions.GetImageFromXiaohongshuURLAsync(driver, "http://xhslink.com/o/8sDMR7HKKej", 1);
-
-            //driver.Close();
-
-            string XiaHTMLPage = Path.Combine(exeDirectory, "page.html");
-
-            var imageNames = VParser.src.tools.ExtractImageNames(XiaHTMLPage);
-            var videoNames = VParser.src.tools.ExtractVideoNames(XiaHTMLPage);
-
-            foreach (string imageName in imageNames)
+            switch (command.ToLower())
             {
-                Console.WriteLine(imageName);
-            }
-            foreach (string videoName in videoNames)
-            {
-                Console.WriteLine(videoName);
+                case "getcookies":
+                    SeleniumFunctions.GetCookies(parameter, "xiaohongshu");
+                    break;
+
+                case "downloadfiles":
+                    IWebDriver driver = new ChromeDriver();
+                    SeleniumFunctions.SetCookies(driver, parameter, cookieFilePath);
+                    string htmlFile = await SeleniumFunctions.XiaohongshuDownloaderHTML(driver, urlToDownload);
+                    driver.Close();
+
+                    // скачивается иногда bin, наверное все bin будут .mp4 
+                    //подписать все методы
+                    List<string> imageNames = tools.XiaohongshuExtractImageNames(htmlFile);
+                    List<string> videoNames = tools.XiaohongshuExtractVideoNames(htmlFile);
+
+                    List<string> AllFilesNames = imageNames.Concat(videoNames).ToList();
+
+                    List<string> AllFilesURL = tools.XiaohongshuGetURLToAllFiles(AllFilesNames);
+
+                    string FinalDirectotyWithDownloadedFiles = await tools.XiaohongshuFileDownloader(AllFilesURL, urlToDownload);
+
+                    Console.WriteLine(FinalDirectotyWithDownloadedFiles);
+                    break;
+
+                default:
+                    Console.WriteLine("Неизвестная команда. Используйте GetCookies или DownloadFiles.");
+                    break;
             }
         }
     }
