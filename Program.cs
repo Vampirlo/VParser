@@ -53,8 +53,6 @@ namespace VParser
                     string htmlFile = await SeleniumFunctions.XiaohongshuDownloaderHTML(driver, urlToDownload);
                     driver.Close();
 
-                    // скачивается иногда bin, наверное все bin будут .mp4 
-                    //подписать все методы
                     List<string> imageNames = tools.XiaohongshuExtractImageNames(htmlFile);
                     List<string> videoNames = tools.XiaohongshuExtractVideoNames(htmlFile);
 

@@ -415,7 +415,7 @@ namespace VParser
                             else if (url.EndsWith(".mp4") || url.Contains("/stream/"))
                                 fileName += ".mp4";
                             else
-                                fileName += ".bin"; // fallback
+                                fileName += ".mp4"; // fallback
                         }
 
                         string filePath = Path.Combine(XiaohongshuPostDownloadFolderPath, fileName);
