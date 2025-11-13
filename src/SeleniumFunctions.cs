@@ -65,7 +65,14 @@ namespace VParser.src
 {
     internal class SeleniumFunctions
     {
-        public static void WaitAndClickByXPath(IWebDriver driver, string xpath, int timeoutInSeconds = 30)
+        /// <summary>
+        /// Waiting for the xpath element
+        /// </summary>
+        /// <param name="driver"></param>
+        /// <param name="xpath"></param>
+        /// <param name="timeoutInSeconds">seconds to wait</param>
+        /// <param name="click">element.Click() to appear</param>
+        private static void WaitByXPath(IWebDriver driver, string xpath, int timeoutInSeconds = 30, bool click = false)
         {
             IWebElement element = null;
             var timeout = TimeSpan.FromSeconds(timeoutInSeconds);
@@ -79,7 +86,8 @@ namespace VParser.src
 
                     if (element.Displayed && element.Enabled)
                     {
-                        element.Click();
+                        if (click)
+                            element.Click();
                         return;
                     }
                 }
@@ -98,7 +106,12 @@ namespace VParser.src
             Console.WriteLine($"[WARNING] Элемент с XPath '{xpath}' не был найден или не стал кликабельным за {timeoutInSeconds} секунд.");
         }
 
-
+        /// <summary>
+        /// Idle verification of the existence of an xpath object
+        /// </summary>
+        /// <param name="driver"></param>
+        /// <param name="xpath"></param>
+        /// <returns></returns>
         public static bool ElementExists(IWebDriver driver, string xpath)
         {
             try
@@ -112,7 +125,11 @@ namespace VParser.src
             }
         }
 
-        public static void SaveTextToFile(string text)
+        /// <summary>
+        /// save text ro file for VIPDownloader()
+        /// </summary>
+        /// <param name="text"></param>
+        private static void SaveTextToFile(string text)
         {
 
             string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
@@ -138,7 +155,13 @@ namespace VParser.src
             }
         }
 
-        public static List<string> GetAllJpgImageSrcsIncludingCustom(IWebDriver driver)
+        /// <summary>
+        /// Get all jpg URL from page
+        /// можно модернизировать и для всех типов изображений
+        /// </summary>
+        /// <param name="driver"></param>
+        /// <returns></returns>
+        private static List<string> GetAllJpgImageSrcsIncludingCustom(IWebDriver driver)
         {
             var jpgUrls = new List<string>();
 
@@ -161,34 +184,10 @@ namespace VParser.src
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Ошибка при поиске изображений: " + ex.Message);
+                Console.WriteLine("Error when searching for images: " + ex.Message);
             }
 
             return jpgUrls;
-        }
-
-        public static IWebElement? WaitForElementOrNull(IWebDriver driver, string xpath, int timeoutInSeconds = 10)
-        {
-            try
-            {
-                WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutInSeconds));
-                return wait.Until(drv =>
-                {
-                    try
-                    {
-                        var element = drv.FindElement(By.XPath(xpath));
-                        return element.Displayed ? element : null;
-                    }
-                    catch (NoSuchElementException)
-                    {
-                        return null;
-                    }
-                });
-            }
-            catch (WebDriverTimeoutException)
-            {
-                return null;
-            }
         }
 
         /*
@@ -262,7 +261,13 @@ namespace VParser
     }
 }
          */
-        public static async Task VIPDownloader(string url, ChromeOptions options)
+
+        /// <summary>
+        /// Download all images and videos from vip.com page
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="options"></param>
+        public static void VIPDownloader(string url, ChromeOptions options)
         {
         start:
 
@@ -272,25 +277,20 @@ namespace VParser
 
             driver.Navigate().GoToUrl(url);
 
-            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
-
         tryagain:
 
-            WaitAndClickByXPath(driver, "//div[contains(@class, 'uni-modal__btn') and contains(@class, 'uni-modal__btn_default') and normalize-space(text())='Cancel']");
-            WaitAndClickByXPath(driver, "/html/body/uni-app/uni-page/uni-page-wrapper/uni-page-body/uni-view/uni-view[1]/uni-view/uni-button");
-            wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
-            WaitAndClickByXPath(driver, "//div[contains(@class, 'uni-modal__btn') and contains(@class, 'uni-modal__btn_default') and normalize-space(text())='Cancel']");
-
-            wait = new WebDriverWait(driver, TimeSpan.FromSeconds(20));
+            WaitByXPath(driver, "//div[contains(@class, 'uni-modal__btn') and contains(@class, 'uni-modal__btn_default') and normalize-space(text())='Cancel']", click: true);
+            WaitByXPath(driver, "/html/body/uni-app/uni-page/uni-page-wrapper/uni-page-body/uni-view/uni-view[1]/uni-view/uni-button", click: true);
+            WaitByXPath(driver, "//div[contains(@class, 'uni-modal__btn') and contains(@class, 'uni-modal__btn_default') and normalize-space(text())='Cancel']", click: true);
 
             // Попробуем найти кнопку воспроизведения — если она есть, кликнем
             string playButtonXPath = "//*[@id=\"brannerViewId\"]/uni-swiper/div/div/div/uni-swiper-item[1]/uni-view[1]/uni-view[2]";
 
             if (ElementExists(driver, playButtonXPath))
             {
-                Console.WriteLine("Есть кнопка ебаная");
-                WaitAndClickByXPath(driver, playButtonXPath);
-                WaitAndClickByXPath(driver, "/html/body/uni-app/uni-modal/div[2]/div[3]/div[2]");
+                Console.WriteLine("Есть кнопка воспроизведения");
+                WaitByXPath(driver, playButtonXPath, click: true);
+                WaitByXPath(driver, "/html/body/uni-app/uni-modal/div[2]/div[3]/div[2]", click: true);
 
                 IWebElement videoElement = driver.FindElement(By.XPath("//*[@id=\"myVideo\"]/div/video"));
                 string videoSrc = videoElement.GetAttribute("src");
@@ -325,6 +325,7 @@ namespace VParser
         }
 
         /*
+         * For XiaohongshuDownloaderHTML
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
@@ -401,11 +402,11 @@ namespace VParser
         12.11.2025
          */
         /// <summary>
-        /// 
+        /// Wait and get HTML page
         /// </summary>
         /// <param name="driver"></param>
         /// <param name="url"></param>
-        /// <returns></returns>
+        /// <returns>HTML file path</returns>
         public static async Task<string> XiaohongshuDownloaderHTML(IWebDriver driver, string url)
         {
             string htmlSitesFolderName = "XiaohongshuDownloaderAllHTMLPages";
@@ -418,10 +419,10 @@ namespace VParser
             driver.Navigate().GoToUrl(url);
 
             // Get HTML
-            int maxWaitSeconds = 30000000;
+            int maxWaitMilliseconds = 30000;
             int elapsed = 0;
 
-            while (elapsed < maxWaitSeconds)
+            while (elapsed < maxWaitMilliseconds)
             {
                 string pageSource = driver.PageSource;
                 File.WriteAllText(HTMLFilePath, pageSource);
@@ -439,6 +440,13 @@ namespace VParser
             return HTMLFilePath; // ну это просто смешно
         }
 
+        /// <summary>
+        /// Loads a list of Douyin video URLs, opens each one in a Chrome browser,
+        /// extracts the direct video source URL from the <video> tag, and downloads the file.
+        /// If the video source is unavailable, it retries several times and logs failed downloads.
+        /// </summary>
+        /// <param name="options"></param>
+        /// <returns></returns>
         public static async Task MultiplyDouyinVideoDownloadAsync(ChromeOptions options)
         {
             string[] videoLinks = VParser.src.tools.ReadVideoLinks("Douyin");
@@ -542,6 +550,14 @@ namespace VParser
             driver.Quit();  // Закрываем браузер после завершения загрузок
         }
 
+        /// <summary>
+        /// Loads a list of Zcool project URLs, opens each page in a Chrome browser,
+        /// extracts all full-resolution image URLs from specific content sections,
+        /// filters out placeholders and duplicates, and downloads every valid image.
+        /// The method scrolls the page to ensure lazy-loaded images are retrieved.
+        /// </summary>
+        /// <param name="options"></param>
+        /// <returns></returns>
         public static async Task MultiplyZcoolDownloadAsync(ChromeOptions options)
         {
             string[] videoLinks = VParser.src.tools.ReadVideoLinks("zcool");
@@ -644,7 +660,7 @@ namespace VParser
 
             driver.Quit();
         }
-        static void ScrollDown(IWebDriver driver)
+        private static void ScrollDown(IWebDriver driver)
         {
             IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
 
@@ -665,7 +681,7 @@ namespace VParser
             }
         }
 
-        static void ScrollUp(IWebDriver driver)
+        private static void ScrollUp(IWebDriver driver)
         {
 
             IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
@@ -693,7 +709,7 @@ namespace VParser
         /// </summary>
         /// <param name="URL">example https://www.xiaohongshu.com/</param>
         /// <param name="cookiesFileName">example xiaohongshu</param>
-        /// <returns></returns>
+        /// <returns>Path to cookie file</returns>
         public static string GetCookies(string URL, string cookiesFileName)
         {
             string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
@@ -735,9 +751,13 @@ namespace VParser
             return cookieFilePath;
         }
 
-        /*
-         cookies will be saved in the following path C:\vs_proj\VParser\bin\Debug\net8.0\cookies\xiaohongshu.json
-         */
+        /// <summary>
+        /// Loads cookies from a JSON file and adds them to the specified website in the given WebDriver instance.
+        /// After setting cookies, the page is reloaded to apply them.
+        /// </summary>
+        /// <param name="driver">The WebDriver instance used to navigate and set cookies.</param>
+        /// <param name="URL">The URL of the website where cookies will be applied.</param>
+        /// <param name="cookiesFilePath">Path to the JSON file containing cookie data.</param>
         public static void SetCookies(IWebDriver driver, string URL, string cookiesFilePath)
         {
             driver.Navigate().GoToUrl(URL);
@@ -770,6 +790,5 @@ namespace VParser
 
             driver.Navigate().GoToUrl(URL);
         }
-
     }
 }

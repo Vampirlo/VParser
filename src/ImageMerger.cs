@@ -66,7 +66,6 @@ namespace ImageMerger
                 Directory.CreateDirectory(fullPathOfAlreadyMergedImages);
             }
 
-            // Получаем список файлов PNG, отсортированных по дате последнего изменения udp: кто эту хуйню тут написал вообще?
             if (imageFiles.Length == 0)
             {
                 Console.WriteLine("В папке нет изображений в формате PNG.");

@@ -9,6 +9,10 @@ namespace VParser.src
 {
     internal class tools
     {
+        /// <summary>
+        /// currently not in use. Maybe I need a more universal way so that I don't have to set all the parameters here.
+        /// </summary>
+        /// <param name="iniFilePath"></param>
         public static void iniFileCreate(string iniFilePath)
         {
             using (File.Create(iniFilePath));
@@ -21,6 +25,12 @@ namespace VParser.src
 
             Console.WriteLine("ini file was not found. File has been created.");
         }
+
+        /// <summary>
+        /// Read links from file (support Douyin and zcool)
+        /// </summary>
+        /// <param name="siteName"> can be  Douyin or zcool</param>
+        /// <returns></returns>
         public static string[] ReadVideoLinks(string siteName)
         {
             string fileName;
@@ -43,6 +53,12 @@ namespace VParser.src
             // Если файла нет, возвращаем пустой массив
             return new string[0];
         }
+
+        /// <summary>
+        /// processing of received links to images and videos from the website vip.com
+        /// Example ????????????????????????????
+        /// </summary>
+        /// <param name="path"></param>
         public static void VIPCleanUrlsInFile(string path)
         {
             var cleanedLines = new List<string>();
@@ -72,6 +88,10 @@ namespace VParser.src
             File.WriteAllLines(path, cleanedLines);
         }
 
+        /// <summary>
+        /// Remove Duplicate Lines from file
+        /// </summary>
+        /// <param name="filePath"></param>
         public static void RemoveDuplicateLines(string filePath)
         {
             if (!File.Exists(filePath))
@@ -92,6 +112,13 @@ namespace VParser.src
                 Console.WriteLine($"[ERROR] Ошибка при обработке файла: {ex.Message}");
             }
         }
+
+        /// <summary>
+        /// Download files from URLs
+        /// </summary>
+        /// <param name="srcUrlsFile">file with urls to download</param>
+        /// <param name="downloadFolder">folder for downloading files</param>
+        /// <returns></returns>
         public static async Task DownloadFilesFromUrls(string srcUrlsFile, string downloadFolder)
         {
             var urls = await File.ReadAllLinesAsync(srcUrlsFile);
@@ -130,6 +157,14 @@ namespace VParser.src
 
             await Task.WhenAll(tasks);
         }
+
+        /// <summary>
+        /// Download files from URLs with GUID(UUID) name generation for files
+        /// </summary>
+        /// <param name="srcUrlsFile"></param>
+        /// <param name="downloadFolder"></param>
+        /// <param name="useUniqueNames"></param>
+        /// <returns></returns>
         public static async Task DownloadFilesFromUrls(string srcUrlsFile, string downloadFolder, bool useUniqueNames)
         {
             var urls = await File.ReadAllLinesAsync(srcUrlsFile);
@@ -142,7 +177,7 @@ namespace VParser.src
 
             foreach (var url in urls)
             {
-                await semaphore.WaitAsync(); // ограничиваем параллелизм
+                await semaphore.WaitAsync();
 
                 tasks.Add(Task.Run(async () =>
                 {
@@ -180,7 +215,7 @@ namespace VParser.src
             await Task.WhenAll(tasks);
         }
         /*
-         YAPPY
+         YAPPY example
 
 namespace VParser
 {
@@ -203,9 +238,11 @@ namespace VParser
         }
     }
 }
-
-
          */
+        /// <summary>
+        /// Generates a url to a media file from a link to a Yappy post
+        /// </summary>
+        /// <param name="filePath"></param>
         public static void ConvertYappyLinksToRutubeCDN(string filePath)
         {
             // Читаем все строки из файла
@@ -232,7 +269,12 @@ namespace VParser
             File.WriteAllLines(filePath, lines);
         }
 
-        static string ExtractVideoId(string url)
+        /// <summary>
+        /// Extract UUID from url for Yappy (maybe can be merged with ExtractNameFromUrl())
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns>URL UUID</returns>
+        private static string ExtractVideoId(string url)
         {
             // Паттерн для извлечения UUID из URL (например, "0c0db06331e84206832de99bd1f3e6b9")
             var regex = new Regex(@"([a-f0-9]{32})", RegexOptions.IgnoreCase);
@@ -249,6 +291,12 @@ namespace VParser
         /////////////////////////////////////////XIAOHONGSHU//////////////////////////////////////////////////////////////////////////////////////
 
         // Метод для извлечения имен изображений
+        /// <summary>
+        /// Extracts all image names from an HTML file
+        /// </summary>
+        /// <param name="htmlPath"></param>
+        /// <returns>image names</returns>
+        /// <exception cref="FileNotFoundException"></exception>
         public static List<string> XiaohongshuExtractImageNames(string htmlPath)
         {
             if (!File.Exists(htmlPath))
@@ -256,8 +304,6 @@ namespace VParser
 
             string html = File.ReadAllText(htmlPath);
 
-            // Регулярное выражение ищет последовательности символов, похожие на имена файлов
-            // вроде "1040g00831ohs6id6580g5p49hch7oha8k72lqc0"
             var regex = new Regex(@"1040[a-z0-9]+", RegexOptions.IgnoreCase);
 
             var result = new HashSet<string>();
@@ -271,6 +317,13 @@ namespace VParser
 
         // Метод для извлечения имен видео файлов @"u002F([a-z0-9_]+?)\.mp4" брать с u002F
         //                              без u002F @"(?<=u002F)([a-z0-9_]+?)\.mp4"
+
+        /// <summary>
+        /// Extracts all video names from an HTML file
+        /// </summary>
+        /// <param name="htmlPath"></param>
+        /// <returns>video names</returns>
+        /// <exception cref="FileNotFoundException"></exception>
         public static List<string> XiaohongshuExtractVideoNames(string htmlPath)
         {
             if (!File.Exists(htmlPath))
@@ -289,6 +342,11 @@ namespace VParser
             return new List<string>(result);
         }
 
+        /// <summary>
+        /// Substitutes the necessary domain names and media file parameters to get a link to the best quality file
+        /// </summary>
+        /// <param name="files">file names to processing. Can start with '1040' for images and '0' for videos</param>
+        /// <returns></returns>
         public static List<string> XiaohongshuGetURLToAllFiles(List<string> files)
         {
             var updatedFiles = new List<string>();
@@ -314,10 +372,11 @@ namespace VParser
         }
 
         /// <summary>
-        /// Асинхронно скачивает медиафайлы по ссылкам и сохраняет их в папку, чьё название берётся по имени ссылки на медиафайлы.
+        /// Downloads media files from links and saves them to a folder whose name is taken from the name of the link to the media files
         /// </summary>
-        /// <param name="urls">Список ссылок на файлы.</param>
-        /// <param name="baseDirectory">Папка, где будет создана подпапка (по умолчанию текущая)</param>
+        /// <param name="urls">A list of links to files.</param>
+        /// <param name="mainLink">Link to the post</param>
+        /// <returns>The path to the folder with saved media files</returns>
         public static async Task<string> XiaohongshuFileDownloader(List<string> urls, string mainLink)
         {
             //Directory
