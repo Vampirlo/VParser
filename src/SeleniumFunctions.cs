@@ -13,6 +13,8 @@ using System.Collections;
 using OpenQA.Selenium.Firefox;
 using Newtonsoft.Json;
 using System.Xml.Linq;
+using System.Reflection.Metadata;
+using OpenQA.Selenium.Interactions;
 
 /* selenium program.cs
  * 
@@ -407,8 +409,21 @@ namespace VParser
         /// <param name="driver"></param>
         /// <param name="url"></param>
         /// <returns>HTML file path</returns>
-        public static async Task<string> XiaohongshuDownloaderHTML(IWebDriver driver, string url)
+        public static async Task<string> XiaohongshuDownloaderHTML(string url, bool? mobileDriver = false, string? domainURLforSetCookie = null, string? cookiesFilePath = null)
         {
+            var options = new ChromeOptions();
+            if (mobileDriver == true)
+            {
+                options.EnableMobileEmulation("iPhone X");
+            }
+
+            IWebDriver driver = new ChromeDriver(options);
+
+            if (!string.IsNullOrEmpty(domainURLforSetCookie) && !string.IsNullOrEmpty(cookiesFilePath))
+            {
+                SetCookies(driver, domainURLforSetCookie, cookiesFilePath);
+            }
+
             string htmlSitesFolderName = "XiaohongshuDownloaderAllHTMLPages";
             string htmlSitesFolderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, htmlSitesFolderName);
             Directory.CreateDirectory(htmlSitesFolderPath);
@@ -429,6 +444,7 @@ namespace VParser
                 if (pageSource.Contains("1040") || pageSource.Contains(".mp4"))
                 {
                     File.WriteAllText(HTMLFilePath, pageSource);
+                    driver.Quit();
                     return HTMLFilePath;
                 }
                 await Task.Delay(10);

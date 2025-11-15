@@ -49,12 +49,7 @@ namespace VParser
                     break;
 
                 case "downloadfiles":
-                    IWebDriver driver = new ChromeDriver();
-                    SeleniumFunctions.SetCookies(driver, parameter, cookieFilePath);
-                    string htmlFile = await SeleniumFunctions.XiaohongshuDownloaderHTML(driver, urlToDownload);
-                    driver.Quit();
-
-                    string hardcode = "C:\\vs_proj\\VParser\\bin\\Debug\\net8.0\\XiaohongshuDownloaderAllHTMLPages\\50BNdsgIygg.html";
+                    string htmlFile = await SeleniumFunctions.XiaohongshuDownloaderHTML(urlToDownload, true);
 
                     List<string> imageNames = tools.XiaohongshuExtractImageNames(htmlFile);
                     List<string> videoNames = tools.XiaohongshuExtractVideoNames(htmlFile);
@@ -66,18 +61,10 @@ namespace VParser
                     string FinalDirectotyWithDownloadedFiles = await tools.XiaohongshuFileDownloader(AllFilesURL, urlToDownload);
 
                     Console.WriteLine(FinalDirectotyWithDownloadedFiles);
-                    //////////////////////////////////// СДЕЛАЙ ЛОГ ДЛЯ ЭТОГО ВСЕГО
-
-
-                    //IWebDriver driver = new ChromeDriver();
-                    //driver.Navigate().GoToUrl("https://www.google.com/");
-                    //driver.Quit();
-                    //string path = "C:\\vs_proj\\VParser\\bin\\Debug\\net8.0\\XiaohongshuDownload\\C6CeXDeVq4";
-                    //Console.WriteLine(path);
                     break;
 
                 default:
-                    Console.WriteLine("Неизвестная команда. Используйте GetCookies или DownloadFiles.");
+                    Console.WriteLine("Unknown command. Use GetCookies or DownloadFiles.");
                     break;
             }
         }
