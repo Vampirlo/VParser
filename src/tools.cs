@@ -290,7 +290,6 @@ namespace VParser
 
         /////////////////////////////////////////XIAOHONGSHU//////////////////////////////////////////////////////////////////////////////////////
 
-        // Метод для извлечения имен изображений
         /// <summary>
         /// Extracts all image names from an HTML file
         /// </summary>
@@ -359,6 +358,7 @@ namespace VParser
                 {
                     updatedFiles.Add($"https://sns-img-hw.xhscdn.com/{file}?imageView2/2/w/0/format/png");
                     updatedFiles.Add($"https://sns-video-bd.xhscdn.com/spectrum/{file}");
+                    updatedFiles.Add($"https://sns-video-bd.xhscdn.com/{file}");
                     updatedFiles.Add($"https://sns-webpic.xhscdn.com/spectrum/{file}?imageView2/2/w/0/format/png");
                     updatedFiles.Add($"https://sns-img-hw.xhscdn.com/notes_pre_post/{file}?imageView2/2/w/0/format/png");
 
@@ -423,11 +423,11 @@ namespace VParser
                         var bytes = await client.GetByteArrayAsync(url);
                         await File.WriteAllBytesAsync(filePath, bytes);
 
-                        Console.WriteLine($"✅ Downloaded: {fileName}");
+                        //Console.WriteLine($"✅ Downloaded: {fileName}");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"❌ Failed to download {url}: {ex.Message}");
+                        //Console.WriteLine($"❌ Failed to download {url}: {ex.Message}");
                     }
                     finally
                     {

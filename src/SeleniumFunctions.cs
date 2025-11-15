@@ -419,7 +419,7 @@ namespace VParser
             driver.Navigate().GoToUrl(url);
 
             // Get HTML
-            int maxWaitMilliseconds = 30000;
+            int maxWaitMilliseconds = 2000;
             int elapsed = 0;
 
             while (elapsed < maxWaitMilliseconds)
@@ -432,10 +432,10 @@ namespace VParser
                     return HTMLFilePath;
                 }
                 await Task.Delay(10);
-                elapsed++;
+                elapsed+= 10;
             }
-
-            Console.WriteLine("HTML is Empty");
+            driver.Quit();
+            Console.WriteLine("HTML is Empty. Xiaohongshu most likely ended the session. Reauthorization is required.");
             Environment.Exit(0);
             return HTMLFilePath; // ну это просто смешно
         }
