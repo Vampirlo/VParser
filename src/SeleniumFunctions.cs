@@ -450,6 +450,8 @@ namespace VParser
                     return HTMLFilePath;
                 }
                 Console.WriteLine("HTML is Empty.");
+                driver.Quit();
+                Environment.Exit(0);
             }
 
             // Get HTML

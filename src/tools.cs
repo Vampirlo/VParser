@@ -125,7 +125,10 @@ namespace VParser.src
             int maxParallelism = Environment.ProcessorCount;
 
             using var semaphore = new SemaphoreSlim(maxParallelism);
-            using var httpClient = new HttpClient();
+            using var httpClient = new HttpClient()
+            {
+                Timeout = TimeSpan.FromSeconds(50)
+            };
 
             var tasks = new List<Task>();
 
@@ -420,8 +423,17 @@ namespace VParser
 
                         string filePath = Path.Combine(XiaohongshuPostDownloadFolderPath, fileName);
 
-                        var bytes = await client.GetByteArrayAsync(url);
-                        await File.WriteAllBytesAsync(filePath, bytes);
+                        try
+                        {
+                            var bytes = await client.GetByteArrayAsync(url);
+                            await File.WriteAllBytesAsync(filePath, bytes);
+                        }
+                        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+                        {
+                            // Таймаут скачивания
+                            Console.WriteLine($"⏳ Timeout while downloading: {url}");
+                            Environment.Exit(0);
+                        }
 
                         //Console.WriteLine($"✅ Downloaded: {fileName}");
                     }
