@@ -382,21 +382,16 @@ namespace VParser
         /// <returns>The path to the folder with saved media files</returns>
         public static async Task<string> XiaohongshuFileDownloader(List<string> urls, string mainLink)
         {
-            //Directory
+            // Directory setup
             string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            string XiaohongshuDownloadFolderName = "XiaohongshuDownload";
-            string XiaohongshuDownloadFolderPath = Path.Combine(exeDirectory, XiaohongshuDownloadFolderName);
-            string XiaohongshuPostDownloadFolderName = ExtractNameFromUrl(mainLink);
-            string XiaohongshuPostDownloadFolderPath = Path.Combine(XiaohongshuDownloadFolderPath, XiaohongshuPostDownloadFolderName);
+            string XiaohongshuDownloadFolderPath = Path.Combine(exeDirectory, "XiaohongshuDownload");
+            string XiaohongshuPostDownloadFolderPath = Path.Combine(XiaohongshuDownloadFolderPath, ExtractNameFromUrl(mainLink));
 
             Directory.CreateDirectory(XiaohongshuPostDownloadFolderPath);
 
-            using HttpClient client = new HttpClient();
-
-            // Limit simultaneous downloads to 5
+            // Limit simultaneous downloads to 15
             using SemaphoreSlim semaphore = new SemaphoreSlim(15);
 
-            // Download files async
             var downloadTasks = new List<Task>();
 
             foreach (var url in urls)
@@ -407,15 +402,14 @@ namespace VParser
                 {
                     try
                     {
-                        // Extract filename
+                        // Prepare file name
                         string fileName = Path.GetFileName(new Uri(url).AbsolutePath);
 
-                        // Add extension if missing
-                        if (!fileName.Contains('.'))
+                        if (string.IsNullOrWhiteSpace(fileName) || !fileName.Contains('.'))
                         {
-                            if (url.Contains("format/png") || url.EndsWith("png"))
+                            if (url.Contains("png") || url.Contains("format/png"))
                                 fileName += ".png";
-                            else if (url.EndsWith(".mp4") || url.Contains("/stream/"))
+                            else if (url.Contains("mp4") || url.Contains("/stream/"))
                                 fileName += ".mp4";
                             else
                                 fileName += ".mp4"; // fallback
@@ -423,17 +417,42 @@ namespace VParser
 
                         string filePath = Path.Combine(XiaohongshuPostDownloadFolderPath, fileName);
 
+                        var handler = new HttpClientHandler()
+                        {
+                            AllowAutoRedirect = true
+                        };
+
+                        using var client = new HttpClient(handler)
+                        {
+                            Timeout = Timeout.InfiniteTimeSpan // allow long downloads
+                        };
+
+                        // Timeout only for connecting, not downloading
+                        using var connectTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+                        HttpResponseMessage response;
+
                         try
                         {
-                            var bytes = await client.GetByteArrayAsync(url);
-                            await File.WriteAllBytesAsync(filePath, bytes);
+                            response = await client.GetAsync(
+                                url,
+                                HttpCompletionOption.ResponseHeadersRead,
+                                connectTimeout.Token
+                            );
                         }
-                        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+                        catch (OperationCanceledException)
                         {
-                            // Таймаут скачивания
-                            Console.WriteLine($"⏳ Timeout while downloading: {url}");
-                            Environment.Exit(0);
+                            //Console.WriteLine($"⏳ Server not responding (timeout): {url}");
+                            return;
                         }
+
+                        response.EnsureSuccessStatusCode();
+
+                        // Stream download (no timeout)
+                        await using var httpStream = await response.Content.ReadAsStreamAsync();
+                        await using var fileStream = File.Create(filePath);
+
+                        await httpStream.CopyToAsync(fileStream);
 
                         //Console.WriteLine($"✅ Downloaded: {fileName}");
                     }
