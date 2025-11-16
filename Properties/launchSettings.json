@@ -2,7 +2,7 @@
   "profiles": {
     "VParser": {
       "commandName": "Project",
-      "commandLineArgs": "DownloadFiles https://www.xiaohongshu.com http://xhslink.com/o/50BNdsgIygg"
+      "commandLineArgs": "DownloadFiles https://www.xiaohongshu.com http://xhslink.com/o/7N45nTSzSNw"
     }
   }
 }

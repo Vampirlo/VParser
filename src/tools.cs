@@ -391,7 +391,7 @@ namespace VParser
             using HttpClient client = new HttpClient();
 
             // Limit simultaneous downloads to 5
-            using SemaphoreSlim semaphore = new SemaphoreSlim(5);
+            using SemaphoreSlim semaphore = new SemaphoreSlim(15);
 
             // Download files async
             var downloadTasks = new List<Task>();

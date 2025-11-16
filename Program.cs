@@ -51,6 +51,8 @@ namespace VParser
                 case "downloadfiles":
                     string htmlFile = await SeleniumFunctions.XiaohongshuDownloaderHTML(urlToDownload, true);
 
+                    string hardcore = "C:\\vs_proj\\VParser\\bin\\Debug\\net8.0\\XiaohongshuDownloaderAllHTMLPages\\7N45nTSzSNw.html";
+
                     List<string> imageNames = tools.XiaohongshuExtractImageNames(htmlFile);
                     List<string> videoNames = tools.XiaohongshuExtractVideoNames(htmlFile);
 
@@ -61,6 +63,11 @@ namespace VParser
                     string FinalDirectotyWithDownloadedFiles = await tools.XiaohongshuFileDownloader(AllFilesURL, urlToDownload);
 
                     Console.WriteLine(FinalDirectotyWithDownloadedFiles);
+
+
+
+                    //await Task.Delay(5000);
+                    //Console.WriteLine("C:\\vs_proj\\VParser\\bin\\Debug\\net8.0\\XiaohongshuDownload\\50BNdsgIygg");
                     break;
 
                 default:

@@ -340,6 +340,7 @@ using OpenQA.Selenium.Interactions;
 using System.Xml;
 using Newtonsoft.Json;
 using System.Net.Http;
+using System;
 
 namespace VParser
 {
@@ -357,7 +358,10 @@ namespace VParser
 
             string command = args[0];
             string parameter = args[1];
-            string urlToDownload = args[2];
+            string? urlToDownload = null; 
+
+            if (args.Length >= 3)
+                urlToDownload = args[2];
 
             string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
             string driverPath = Path.Combine(exeDirectory, "chromedriver.exe");
@@ -375,13 +379,8 @@ namespace VParser
                     break;
 
                 case "downloadfiles":
-                    IWebDriver driver = new ChromeDriver();
-                    SeleniumFunctions.SetCookies(driver, parameter, cookieFilePath);
-                    string htmlFile = await SeleniumFunctions.XiaohongshuDownloaderHTML(driver, urlToDownload);
-                    driver.Close();
+                    string htmlFile = await SeleniumFunctions.XiaohongshuDownloaderHTML(urlToDownload, true);
 
-                    // скачивается иногда bin, наверное все bin будут .mp4 
-                    //подписать все методы
                     List<string> imageNames = tools.XiaohongshuExtractImageNames(htmlFile);
                     List<string> videoNames = tools.XiaohongshuExtractVideoNames(htmlFile);
 
@@ -395,7 +394,7 @@ namespace VParser
                     break;
 
                 default:
-                    Console.WriteLine("Неизвестная команда. Используйте GetCookies или DownloadFiles.");
+                    Console.WriteLine("Unknown command. Use GetCookies or DownloadFiles.");
                     break;
             }
         }
@@ -403,11 +402,14 @@ namespace VParser
 }
         12.11.2025
          */
+
         /// <summary>
-        /// Wait and get HTML page
+        /// 
         /// </summary>
-        /// <param name="driver"></param>
         /// <param name="url"></param>
+        /// <param name="mobileDriver"></param>
+        /// <param name="domainURLforSetCookie"></param>
+        /// <param name="cookiesFilePath"></param>
         /// <returns>HTML file path</returns>
         public static async Task<string> XiaohongshuDownloaderHTML(string url, bool? mobileDriver = false, string? domainURLforSetCookie = null, string? cookiesFilePath = null)
         {
@@ -431,10 +433,27 @@ namespace VParser
             string htmlFileName = tools.ExtractNameFromUrl(url) + ".html";
             string HTMLFilePath = Path.Combine(htmlSitesFolderPath, htmlFileName);
 
-            driver.Navigate().GoToUrl(url);
+            driver.Manage().Timeouts().PageLoad = TimeSpan.FromSeconds(10);
+
+            try
+            {
+                driver.Navigate().GoToUrl(url);
+            }
+            catch (WebDriverTimeoutException)
+            {
+                string pageSource = driver.PageSource;
+                File.WriteAllText(HTMLFilePath, pageSource);
+                if (pageSource.Contains("1040") || pageSource.Contains(".mp4"))
+                {
+                    File.WriteAllText(HTMLFilePath, pageSource);
+                    driver.Quit();
+                    return HTMLFilePath;
+                }
+                Console.WriteLine("HTML is Empty.");
+            }
 
             // Get HTML
-            int maxWaitMilliseconds = 2000;
+            int maxWaitMilliseconds = 1000;
             int elapsed = 0;
 
             while (elapsed < maxWaitMilliseconds)
