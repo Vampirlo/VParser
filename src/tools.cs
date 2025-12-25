@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -365,6 +366,7 @@ namespace VParser
                     updatedFiles.Add($"https://sns-webpic.xhscdn.com/spectrum/{file}?imageView2/2/w/0/format/png");
                     updatedFiles.Add($"https://sns-img-hw.xhscdn.com/notes_pre_post/{file}?imageView2/2/w/0/format/png");
                     updatedFiles.Add($"https://sns-video-bd.xhscdn.com/pre_post/{file}");
+                    updatedFiles.Add($"https://sns-webpic.xhscdn.com/notes_pre_post/{file}?imageView2/2/w/0/format/png");
                 }
                 else if (file.StartsWith("0"))
                 {
