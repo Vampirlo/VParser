@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Drawing.Drawing2D;
 
 /*
  * Program.cs example:
@@ -34,7 +35,7 @@ namespace VParser
 
             // обычная вариация
 
-            //imageMerger.ImageMergerWithOneHeight(imageMerger.GetSortedImageFilesByDate(mergeFullPath), fullPathOfAlreadyMergedImages);
+            //imageMerger.ImageMergerWithOneHeight(imageMerger.GetSortedImageFilesByDate(mergeFullPath), fullPathOfAlreadyMergedImages); // can be used ImageMergerWithAutoScaleWidth
             //imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(fullPathOfAlreadyMergedImages), mergeFullPath, SplitedImagesPath, imageMerger.SplitAllImageFromPath);
             //imageMerger.MultiThreadedProcessImages(imageMerger.GetSortedImageFilesByDate(SplitedImagesPath), ImageWithoutWhileLinesPath, imageMerger.GetImagesWithoutWhiteLines);
             //or
@@ -57,6 +58,90 @@ namespace ImageMerger
                 .ToArray();
 
             return imageFiles;
+        }
+
+        public static void ImageMergerWithAutoScaleWidth(
+            string[] imageFiles,
+            string outputDirectory)
+        {
+            if (!Directory.Exists(outputDirectory))
+                Directory.CreateDirectory(outputDirectory);
+
+            if (imageFiles.Length == 0)
+            {
+                Console.WriteLine("Нет изображений.");
+                return;
+            }
+
+            try
+            {
+                // Загружаем первое изображение
+                using Image firstImage = Image.FromFile(imageFiles[0]);
+                int targetWidth = firstImage.Width;
+
+                // Список подготовленных изображений
+                List<Image> preparedImages = new();
+                preparedImages.Add(new Bitmap(firstImage));
+
+                int totalHeight = firstImage.Height;
+
+                // Подготавливаем остальные
+                for (int i = 1; i < imageFiles.Length; i++)
+                {
+                    using Image img = Image.FromFile(imageFiles[i]);
+
+                    if (img.Width == targetWidth)
+                    {
+                        preparedImages.Add(new Bitmap(img));
+                        totalHeight += img.Height;
+                    }
+                    else
+                    {
+                        float scale = (float)targetWidth / img.Width;
+                        int newHeight = (int)(img.Height * scale);
+
+                        Bitmap resized = new Bitmap(targetWidth, newHeight);
+                        using (Graphics g = Graphics.FromImage(resized))
+                        {
+                            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                            g.SmoothingMode = SmoothingMode.HighQuality;
+                            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                            g.CompositingQuality = CompositingQuality.HighQuality;
+
+                            g.DrawImage(img, 0, 0, targetWidth, newHeight);
+                        }
+
+                        preparedImages.Add(resized);
+                        totalHeight += newHeight;
+                    }
+                }
+
+                // Итоговое изображение
+                using Bitmap result = new Bitmap(targetWidth, totalHeight);
+                using (Graphics g = Graphics.FromImage(result))
+                {
+                    g.Clear(Color.Transparent);
+
+                    int currentY = 0;
+                    foreach (var img in preparedImages)
+                    {
+                        g.DrawImage(img, 0, currentY);
+                        currentY += img.Height;
+                        img.Dispose();
+                    }
+                }
+
+                string outputPath = Path.Combine(
+                    outputDirectory,
+                    Guid.NewGuid().ToString("N") + ".png");
+
+                result.Save(outputPath, ImageFormat.Png);
+                Console.WriteLine($"Готово: {outputPath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Ошибка: " + ex.Message);
+            }
         }
 
         public static void ImageMergerWithOneHeight(string[] imageFiles, string fullPathOfAlreadyMergedImages)
@@ -110,7 +195,7 @@ namespace ImageMerger
                     // Сохраняем итоговое изображение
                     string randomFileName = Guid.NewGuid().ToString("N") + ".png";
 
-                    string outputFilePath = Path.Combine(fullPathOfAlreadyMergedImages, randomFileName); //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    string outputFilePath = Path.Combine(fullPathOfAlreadyMergedImages, randomFileName);
 
                     if (File.Exists(outputFilePath)) File.Delete(outputFilePath);
                     combinedImage.Save(outputFilePath, ImageFormat.Png);
