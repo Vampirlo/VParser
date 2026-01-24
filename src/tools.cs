@@ -462,6 +462,7 @@ namespace VParser
                     }
                     catch (Exception ex)
                     {
+                        File.AppendAllText("download_errors.log", $" {url} | {ex.Message}{Environment.NewLine}");
                         //Console.WriteLine($"❌ Failed to download {url}: {ex.Message}");
                     }
                     finally
