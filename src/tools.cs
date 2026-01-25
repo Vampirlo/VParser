@@ -10,6 +10,8 @@ namespace VParser.src
 {
     internal class tools
     {
+        private static readonly object logLock = new();
+
         /// <summary>
         /// currently not in use. Maybe I need a more universal way so that I don't have to set all the parameters here.
         /// </summary>
@@ -457,13 +459,13 @@ namespace VParser
                         await using var fileStream = File.Create(filePath);
 
                         await httpStream.CopyToAsync(fileStream);
-
-                        //Console.WriteLine($"✅ Downloaded: {fileName}");
                     }
                     catch (Exception ex)
                     {
-                        File.AppendAllText("download_errors.log", $" {url} | {ex.Message}{Environment.NewLine}");
-                        //Console.WriteLine($"❌ Failed to download {url}: {ex.Message}");
+                        lock (logLock)
+                        {
+                            File.AppendAllText("download_errors.log", $" {url} | {ex.Message}{Environment.NewLine}");
+                        }
                     }
                     finally
                     {

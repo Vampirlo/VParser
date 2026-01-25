@@ -60,10 +60,10 @@ namespace VParser
 
                     List<string> AllFilesURL = tools.XiaohongshuGetURLToAllFiles(AllFilesNames);
 
-                    foreach (var item in AllFilesURL)
-                    {
-                        Console.WriteLine(item);
-                    }
+                    //foreach (var item in AllFilesURL)
+                    //{
+                    //    Console.WriteLine(item);
+                    //}
 
                     string FinalDirectotyWithDownloadedFiles = await tools.XiaohongshuFileDownloader(AllFilesURL, urlToDownload);
 
