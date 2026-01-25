@@ -18,7 +18,7 @@ namespace VParser.src
         /// <param name="iniFilePath"></param>
         public static void iniFileCreate(string iniFilePath)
         {
-            using (File.Create(iniFilePath));
+            using (File.Create(iniFilePath)) ;
             INIManager manager = new INIManager(iniFilePath);
             manager.WritePrivateString("SETTINGS", "XiaohongshuDownloadDirectory", "");
             manager.WritePrivateString("SETTINGS", "MinutesToWaitSiteLoading", "30");
@@ -46,7 +46,7 @@ namespace VParser.src
                 return new string[0];
 
             string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
-            
+
             // Если файл существует, возвращаем массив строк
             if (File.Exists(filePath))
             {
@@ -448,8 +448,38 @@ namespace VParser
                         }
                         catch (OperationCanceledException)
                         {
-                            //Console.WriteLine($"⏳ Server not responding (timeout): {url}");
+                            lock (logLock)
+                            {
+                                File.AppendAllText("download_errors.log", $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} | link: {mainLink} | {url} | connect timeout{Environment.NewLine}");
+                            }
                             return;
+                        }
+
+                        // 400
+                        if (response.StatusCode == HttpStatusCode.BadRequest && url.Contains("png"))
+                        {
+                            string jpgUrl = url[..^3] + "jpg";
+                            response.Dispose();
+                            File.AppendAllText("download_errors.log", $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} | link: {mainLink} | {jpgUrl} | Trying to download jpg{Environment.NewLine}");
+                            try
+                            {
+                                response = await client.GetAsync(
+                                    jpgUrl,
+                                    HttpCompletionOption.ResponseHeadersRead,
+                                    connectTimeout.Token
+                                );
+                            }
+                            catch (OperationCanceledException)
+                            {
+                                lock (logLock)
+                                {
+                                    File.AppendAllText(
+                                        "download_errors.log",
+                                        $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} | link: {mainLink} | {jpgUrl} | connect timeout{Environment.NewLine}"
+                                    );
+                                }
+                                return;
+                            }
                         }
 
                         response.EnsureSuccessStatusCode();
@@ -464,7 +494,7 @@ namespace VParser
                     {
                         lock (logLock)
                         {
-                            File.AppendAllText("download_errors.log", $" {url} | {ex.Message}{Environment.NewLine}");
+                            File.AppendAllText("download_errors.log", $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} | link: {mainLink} | {url} | {ex.Message}{Environment.NewLine}");
                         }
                     }
                     finally
