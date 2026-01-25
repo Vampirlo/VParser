@@ -49,7 +49,7 @@ namespace VParser
                     break;
 
                 case "downloadfiles":
-                    string htmlFile = await SeleniumFunctions.XiaohongshuDownloaderHTML(urlToDownload, true);
+                    string htmlFile = await SeleniumFunctions.KameleoXiaohongshuDownloaderHTML(urlToDownload, true);
 
                     string hardcore = "C:\\vs_proj\\VParser\\bin\\Debug\\net8.0\\XiaohongshuDownloaderAllHTMLPages\\7q9iM530MQC.html";
 

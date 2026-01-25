@@ -127,7 +127,7 @@ namespace VParser.src
             var urls = await File.ReadAllLinesAsync(srcUrlsFile);
             int maxParallelism = Environment.ProcessorCount;
 
-            using var semaphore = new SemaphoreSlim(maxParallelism);
+            using var semaphore = new SemaphoreSlim(maxParallelism); // нужно (иметь возможность) делать меньше
             using var httpClient = new HttpClient()
             {
                 Timeout = TimeSpan.FromSeconds(50)
