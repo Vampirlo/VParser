@@ -18,6 +18,7 @@ using OpenQA.Selenium.Interactions;
 using Kameleo.LocalApiClient;
 using Kameleo.LocalApiClient.Model;
 using OpenQA.Selenium.Remote;
+using OpenQA.Selenium.Edge;
 
 /* selenium program.cs
  * 
@@ -423,9 +424,13 @@ namespace VParser
         /// <param name="domainURLforSetCookie"></param>
         /// <param name="cookiesFilePath"></param>
         /// <returns>HTML file path</returns>
+
         public static async Task<string> XiaohongshuDownloaderHTML(string url, bool? mobileDriver = false, string? domainURLforSetCookie = null, string? cookiesFilePath = null)
         {
             var options = new ChromeOptions();
+            options.AddArguments("--allow-running-insecure-content");
+            options.AddArguments("--disable-web-security");
+            options.AddArguments("--ignore-certificate-errors");
             if (mobileDriver == true)
             {
                 options.EnableMobileEmulation("iPhone X");
@@ -489,34 +494,7 @@ namespace VParser
             return HTMLFilePath; // ну это просто смешно
         }
 
-        /*                       kameleo
 
-                     
-                             `m            ,'
-                              `Mm        ,|'
-                               "MMm    ,||'
-                                "MMM,,|||'
-      ,ee..__           .|3333333"MMM|||'3333333Mm           __..ee,
-     ,333333333ee..__  .||33333333"MM||'33333333MMm  __..ee333333333,
-     Y33333333333333333|||3333|3333MM||3333M3333MMM33333333333333333P
-      'Y333333333333333||33333||3333333333MM33333MM333333333333333P'
-        'Y3333333333333||33333|||33333333MMM33333MM3333333333333P'
-          'Y33333333333||33333||||333333MMMM33333MM33333333333P'
-            'Y333333333||33333||`||3333MM"MM33333MM333333333P'
-              'Y3333333||@@@@@|| `||$$MM" MM@@@@@MM3333333P'
-                'Y33333||@@@@|||  |$""$M  MMM@@@@MM33333P'
-                  'Y333|@@@@@||| .|$  $Mm MMM@@@@@M333P'
-                    'Y3|$$$$$|||.|$"  "$MmMMM$$$$$M3P'
-                      'Y33333|||||$$$$$$MMMMM33333P'
-                        'Y333||||$$$$$$$$MMMM333P'
-                          'Y3||||$$$$$$$$MMMM3P'
-                            'Y||$$$$|M$$$$MMP'
-                              'Y$$$||MM$$$P'
-                                'Y|||MMMP'
-                                  'Y|MP'
-                                    `'
-         
-         */
         public static async Task<string> KameleoXiaohongshuDownloaderHTML(string url, bool? mobileDriver = false, string? domainURLforSetCookie = null, string? cookiesFilePath = null)
         {
             string htmlSitesFolderName = "XiaohongshuDownloaderAllHTMLPages";
@@ -571,8 +549,8 @@ namespace VParser
             {
                 driver.Navigate().GoToUrl(url);
 
-                await Task.Delay(1500); // дать JS отработать
-                //await Task.Delay(60000);
+                //await Task.Delay(1500); // дать JS отработать
+                await Task.Delay(60000);
 
                 var html = driver.PageSource;
                 File.WriteAllText(HTMLFilePath, html);

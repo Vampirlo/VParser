@@ -11,7 +11,6 @@ namespace VParser.src
     internal class tools
     {
         private static readonly object logLock = new();
-
         /// <summary>
         /// currently not in use. Maybe I need a more universal way so that I don't have to set all the parameters here.
         /// </summary>
@@ -436,48 +435,27 @@ namespace VParser
                         // Timeout only for connecting, not downloading
                         using var connectTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
-                        HttpResponseMessage response;
+                        HttpResponseMessage? response = await TryDownloadAsync(url, client, connectTimeout, mainLink);
 
-                        try
+                        bool shouldTryJpg = url.Contains("png") && (response == null || response.StatusCode == HttpStatusCode.BadRequest);
+
+                        if (shouldTryJpg)
                         {
-                            response = await client.GetAsync(
-                                url,
-                                HttpCompletionOption.ResponseHeadersRead,
-                                connectTimeout.Token
-                            );
-                        }
-                        catch (OperationCanceledException)
-                        {
+                            if (response != null)
+                                response.Dispose();
+
+                            string jpgUrl = url[..^3] + "jpg";
+
                             lock (logLock)
                             {
-                                File.AppendAllText("download_errors.log", $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} | link: {mainLink} | {url} | connect timeout{Environment.NewLine}");
+                                File.AppendAllText("download_errors.log",
+                                    $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} | link: {mainLink} | {jpgUrl} | Trying to download jpg{Environment.NewLine}");
                             }
-                            return;
-                        }
 
-                        // 400
-                        if (response.StatusCode == HttpStatusCode.BadRequest && url.Contains("png"))
-                        {
-                            string jpgUrl = url[..^3] + "jpg";
-                            response.Dispose();
-                            File.AppendAllText("download_errors.log", $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} | link: {mainLink} | {jpgUrl} | Trying to download jpg{Environment.NewLine}");
-                            try
+                            response = await TryDownloadAsync(url, client, connectTimeout, mainLink);
+
+                            if (response == null)
                             {
-                                response = await client.GetAsync(
-                                    jpgUrl,
-                                    HttpCompletionOption.ResponseHeadersRead,
-                                    connectTimeout.Token
-                                );
-                            }
-                            catch (OperationCanceledException)
-                            {
-                                lock (logLock)
-                                {
-                                    File.AppendAllText(
-                                        "download_errors.log",
-                                        $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} | link: {mainLink} | {jpgUrl} | connect timeout{Environment.NewLine}"
-                                    );
-                                }
                                 return;
                             }
                         }
@@ -507,6 +485,27 @@ namespace VParser
             await Task.WhenAll(downloadTasks);
 
             return XiaohongshuPostDownloadFolderPath;
+        }
+
+        public static async Task<HttpResponseMessage?> TryDownloadAsync(string urlToDownload, HttpClient client, CancellationTokenSource connectTimeout, string mainLink)
+        {
+            try
+            {
+                return await client.GetAsync(
+                    urlToDownload,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    connectTimeout.Token
+                );
+            }
+            catch (OperationCanceledException)
+            {
+                lock (logLock)
+                {
+                    File.AppendAllText("download_errors.log",
+                        $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} | link: {mainLink} | {urlToDownload} | connect timeout{Environment.NewLine}");
+                }
+                return null;
+            }
         }
 
         /// <summary>
